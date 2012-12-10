@@ -1,0 +1,5016 @@
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 1
+main.asm
+
+
+
+      1				     .286
+      2	0000			     .model tiny
+      3	0000			     .code
+      4				     org 100h
+      5	0100			     start:
+      6	0100  B9 17B3r			     mov	     cx	, offset out_buff
+      7	0103  89 0E 1BB3r		     mov	     head_buff , cx
+      8	0107  89 0E 1BB5r		     mov	     tail_buff , cx
+      9	010B  E8 00C1			     call    set_mode
+     10	010E  E8 0403			     call    MouseInit
+     11	0111  06			     push    es
+     12	0112  E8 1634			     call    SetTimerHandler
+     13	0115  E8 10A9			     call    Ser_Ini
+     14	0118  07			     pop	     es
+     15	0119  E8 007D			     call    print_full_desk
+     16	011C  E8 00BA			     call    draw_exit_button
+     17
+     18
+     19	011F  C6 06 0795r 0C 90		     mov	     black_count , 12
+     20	0125  C6 06 0796r 0C 90		     mov	     white_count , 12
+     21	012B  C6 06 0798r 00 90		     mov	     GameFinished , 0
+     22
+     23
+     24
+     25
+     26					     ; mov	     color , 1
+     27					     ; mov	     my_color ,	0fh
+     28					     ; mov	     enemy_color , 0ah
+     29					     ; mov	     desk_offset , offset white_desk
+     30
+     31					     ; mov	     color , 0
+     32					     ; mov	     my_color ,	0ah
+     33					     ; mov	     enemy_color , 0fh
+     34					     ; mov	     desk_offset , offset black_desk
+     35
+     36					     ; mov	     ColorSelected , 1
+     37
+     38					     ; call  write_letters
+     39					     ; call  write_numbers
+     40					     ; call  DrawFigures
+     41
+     42					     ; mov	     black_count , 1
+     43					     ; mov	     white_count , 1
+     44
+     45	0131  E9 2466			 jmp _main
+     46					   include lib/desk.asm
+1    47				     ;bx - offset to colors
+1    48	0134			     print_row proc near
+1    49	0134  B9 0028			     mov     cx	, 40
+1    50	0137			     _pd0:
+1    51	0137  51			     push    cx
+1    52	0138			     _pd1:
+1    53	0138  B9 0004			 mov	     cx	, 4
+1    54	013B			     _pd2:
+1    55	013B  51			     push    cx
+1    56	013C  8A 07			     mov	     al	, ds:[bx]
+1    57	013E  53			     push    bx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 2
+main.asm
+
+
+
+1    58	013F  8B 1E 0181r		     mov	     bx	, x_off
+1    59	0143  8B 16 0183r		     mov	     dx	, y_off
+1    60	0147  B9 0028			     mov	     cx	, 40
+1    61	014A  E8 0173			     call    draw_hor_line
+1    62	014D  83 06 0181r 28		     add	     x_off , 40
+1    63	0152  5B			     pop	     bx
+1    64	0153  8A 47 01			     mov	     al	, ds:[bx+1]
+1    65	0156  53			     push    bx
+1    66	0157  8B 1E 0181r		     mov	     bx	, x_off
+1    67	015B  8B 16 0183r		     mov	     dx	, y_off
+1    68	015F  B9 0028			     mov	     cx	, 40
+1    69	0162  E8 015B			     call    draw_hor_line
+1    70	0165  5B			     pop	     bx
+1    71	0166  83 06 0181r 28		     add	     x_off , 40
+1    72	016B  59			     pop	     cx
+1    73	016C  E2 CD			     loop    _pd2
+1    74	016E  59			     pop	     cx
+1    75	016F  83 06 0183r 01		     add	     y_off , 1
+1    76	0174  C7 06 0181r 0001		     mov	     x_off , 1
+1    77	017A  E2 BB			     loop    _pd0
+1    78	017C  C3			     retn
+1    79	017D			     endp    print_row
+1    80
+1    81
+1    82	017D  FF 00		     white_offsets   db	0ffh , 0
+1    83	017F  00 FF		     black_offsets   db	0 , 0ffh
+1    84	0181  0001		     x_off   dw	     1
+1    85	0183  0001		     y_off   dw	     1
+1    86
+1    87	0185			     print_desk	proc near
+1    88	0185  B9 0004			     mov     cx	, 4
+1    89	0188			     _pdl:
+1    90	0188  51			     push    cx
+1    91	0189  BB 017Dr			     lea     bx	, white_offsets
+1    92	018C  E8 FFA5			 call	     print_row
+1    93	018F  BB 017Fr			 lea bx	, black_offsets
+1    94	0192  E8 FF9F			     call    print_row
+1    95	0195			     _pdq:
+1    96	0195  59			     pop     cx
+1    97	0196  E2 F0			     loop    _pdl
+1    98	0198  C3			     retn
+1    99	0199			     endp    print_desk
+1   100
+1   101	0199			     print_full_desk proc    near
+1   102	0199  E8 0004			     call    draw_border
+1   103	019C  E8 FFE6			     call    print_desk
+1   104	019F  C3			     retn
+1   105	01A0			     endp    print_full_desk
+1   106
+1   107	01A0			     draw_border     proc    near
+1   108	01A0  33 D2			     xor     dx	, dx
+1   109	01A2  33 DB			     xor     bx	, bx
+1   110	01A4  A0 01CEr			     mov     al	, line_color
+1   111	01A7  B9 0142			     mov     cx	, 322
+1   112	01AA  E8 0113			     call    draw_hor_line
+1   113	01AD  B9 0142			     mov     cx	, 322
+1   114	01B0  33 D2			     xor     dx	, dx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 3
+main.asm
+
+
+
+1   115	01B2  33 DB			     xor     bx	, bx
+1   116	01B4  E8 00F8			     call    draw_ver_line
+1   117	01B7  B9 0142			     mov     cx	, 322
+1   118	01BA  33 D2			     xor     dx	, dx
+1   119	01BC  BB 0141			     mov     bx	, 321
+1   120	01BF  E8 00ED			     call    draw_ver_line
+1   121	01C2  33 DB			     xor     bx	, bx
+1   122	01C4  BA 0141			     mov     dx	, 321
+1   123	01C7  B9 0142			     mov     cx	, 322
+1   124	01CA  E8 00F3			     call    draw_hor_line
+1   125	01CD  C3			     retn
+1   126	01CE			     draw_border     endp
+1   127
+1   128	01CE  AA		     line_color	     db	     0AAh
+    129					   include lib/video.asm
+1   130	01CF			     set_mode	     proc    near
+1   131	01CF  B8 0010			     mov     ax	, 10h
+1   132	01D2  CD 10			     int     10h
+1   133	01D4  C3			     retn
+1   134	01D5			     endp    set_mode
+    135					   include lib/buttons.asm
+1   136	01D5  45 78 69 74	     exit_string     db	     'Exit'
+1   137
+1   138	01D9			     draw_exit_button	     proc    near
+1   139	01D9  A0 0235r			     mov     al	, button_border_color
+1   140	01DC  B9 001D			     mov     cx	, 29
+1   141	01DF  BA 014F			     mov     dx	, 335
+1   142	01E2  BB 0000			     mov     bx	, 0
+1   143	01E5  E8 00C7			     call    draw_ver_line
+1   144	01E8  A0 0235r			     mov     al	, button_border_color
+1   145	01EB  B9 0030			     mov     cx	, 48
+1   146	01EE  BA 014F			     mov     dx	, 335
+1   147	01F1  BB 0000			     mov     bx	, 0
+1   148	01F4  E8 00C9			     call    draw_hor_line
+1   149	01F7  B9 0004			     mov     cx	, 4
+1   150	01FA  BB 01D5r			     lea     bx	, exit_string
+1   151	01FD  B2 00			     mov     dl	, 0
+1   152	01FF  E8 0010			     call    print_string
+1   153	0202  A0 0235r			     mov     al	, button_border_color
+1   154	0205  B9 001D			     mov     cx	, 29
+1   155	0208  BA 014F			     mov     dx	, 335
+1   156	020B  BB 0030			     mov     bx	, 48
+1   157	020E  E8 009E			     call    draw_ver_line
+1   158	0211  C3			     retn
+1   159	0212			     endp    draw_exit_button
+1   160
+1   161				     ;bx - string offset
+1   162				     ;cx - string length
+1   163				     ;dl - start pointer
+1   164	0212			     print_string    proc    near
+1   165	0212			     _ps1:
+1   166	0212  53			     push    bx
+1   167	0213  B4 02			     mov     ah	, 02h
+1   168	0215  B7 00			     mov     bh	, 0
+1   169	0217  B6 18			     mov     dh	, 24
+1   170	0219  FE C2			     inc     dl
+1   171	021B  CD 10			     int     10h
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 4
+main.asm
+
+
+
+1   172	021D  5B			     pop     bx
+1   173	021E  B4 09			     mov     ah	, 09h
+1   174	0220  8A 07			     mov     al	, byte ptr ds:bx
+1   175	0222  43			     inc     bx
+1   176	0223  53			     push    bx
+1   177	0224  51			     push    cx
+1   178	0225  B7 00			     mov     bh	, 0
+1   179	0227  8A 1E 0236r		     mov     bl	, font_color
+1   180	022B  B9 0001			     mov     cx	, 1
+1   181	022E  CD 10			     int     10h
+1   182	0230  59			     pop     cx
+1   183	0231  5B			     pop     bx
+1   184	0232  E2 DE			     loop    _ps1
+1   185	0234  C3			     retn
+1   186	0235			     endp    print_string
+1   187
+1   188	0235  AA		     button_border_color     db	     0AAh
+1   189	0236  AA		     font_color	     db	     0AAh
+    190					   include lib/letters.asm
+1   191	0237			     write_letters   proc    near
+1   192	0237  80 3E 2594r 01		     cmp     color , 1
+1   193	023C  75 06			     jne     _wlb
+1   194	023E  BB 028Fr			     lea     bx	, white_letters
+1   195	0241  EB 04 90			     jmp     _wls
+1   196	0244			     _wlb:
+1   197	0244  BB 029Fr			     lea     bx	, black_letters
+1   198	0247			     _wls:
+1   199	0247  B9 0008			     mov     cx	, 8
+1   200	024A  B2 02			     mov     dl	, 2
+1   201	024C			     _loop1:
+1   202	024C  53			     push    bx
+1   203	024D  B4 02			     mov     ah	, 02h
+1   204	024F  B7 00			     mov     bh	, 0
+1   205	0251  B6 17			     mov     dh	, 23
+1   206	0253  CD 10			     int     10h
+1   207	0255  5B			     pop     bx
+1   208	0256  80 C2 05			     add     dl	, 5
+1   209	0259  52			     push    dx
+1   210	025A  8A 17			     mov     dl	, ds:[bx]
+1   211	025C  CD 21			     int     21h
+1   212	025E  5A			     pop     dx
+1   213	025F  43			     inc     bx
+1   214	0260  E2 EA			     loop    _loop1
+1   215	0262  C3			     retn
+1   216	0263			     endp    write_letters
+1   217
+1   218	0263			     write_numbers   proc    near
+1   219	0263  80 3E 2594r 01		     cmp     color , 1
+1   220	0268  75 06			     jne     _wnb
+1   221	026A  BB 02A7r			     lea     bx	, white_numbers
+1   222	026D  EB 04 90			     jmp     _wns
+1   223	0270			     _wnb:
+1   224	0270  BB 0297r			     lea     bx	, black_numbers
+1   225	0273			     _wns:
+1   226	0273  B9 0008			     mov     cx	, 8
+1   227	0276  B2 29			     mov     dl	, 41
+1   228	0278  B6 01			     mov     dh	, 1
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 5
+main.asm
+
+
+
+1   229	027A			     _loop2:
+1   230	027A  53			     push    bx
+1   231	027B  B4 02			     mov     ah	, 02h
+1   232	027D  B7 00			     mov     bh	, 0
+1   233	027F  CD 10			     int     10h
+1   234	0281  5B			     pop     bx
+1   235	0282  80 C6 03			     add     dh	, 3
+1   236	0285  52			     push    dx
+1   237	0286  8A 17			     mov     dl	, ds:[bx]
+1   238	0288  CD 21			     int     21h
+1   239	028A  5A			     pop     dx
+1   240	028B  43			     inc     bx
+1   241	028C  E2 EC			     loop    _loop2
+1   242	028E  C3			     retn
+1   243	028F			     endp    write_numbers
+1   244
+1   245	028F  61 62 63 64 65 66	67+  white_letters   db	     'abcdefgh'
+    246	      68
+1   247	0297  31 32 33 34 35 36	37+  black_numbers   db	     '12345678'
+    248	      38
+1   249	029F  68 67 66 65 64 63	62+  black_letters   db	     'hgfedcba'
+    250	      61
+1   251	02A7  38 37 36 35 34 33	32+  white_numbers   db	     '87654321'
+    252	      31
+    253					   include lib/lines.asm
+1   254				     ;dx - y-offset
+1   255				     ;cx - pixels count
+1   256				     ;bx - x-offset
+1   257				     ;al - color
+1   258	02AF			     draw_ver_line   proc    near
+1   259	02AF  B4 0C			     mov     ah	, 0ch
+1   260	02B1			     _border_ver:
+1   261	02B1  51			     push    cx
+1   262	02B2  8B CB			     mov     cx	, bx
+1   263	02B4  53			     push    bx
+1   264	02B5  B7 00			     mov     bh	, 0
+1   265	02B7  CD 10			     int     10h
+1   266	02B9  5B			     pop     bx
+1   267	02BA  42			     inc     dx
+1   268	02BB  59			     pop     cx
+1   269	02BC  49			     dec     cx
+1   270	02BD  75 F2			     jnz     _border_ver
+1   271	02BF  C3			     retn
+1   272	02C0			     endp    draw_ver_line
+1   273
+1   274
+1   275				     ;dx - y-position
+1   276				     ;bx - x-position
+1   277				     ;cx - lines count
+1   278				     ;al - color
+1   279	02C0			     draw_hor_line   proc    near
+1   280	02C0  B4 0C			     mov     ah	, 0ch
+1   281	02C2			     _border_hor:
+1   282	02C2  51			     push    cx
+1   283	02C3  8B CB			     mov     cx	, bx
+1   284	02C5  53			     push    bx
+1   285	02C6  33 DB			     xor     bx	, bx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 6
+main.asm
+
+
+
+1   286	02C8  CD 10			     int     10h
+1   287	02CA  5B			     pop     bx
+1   288	02CB  43			     inc     bx
+1   289	02CC  59			     pop     cx
+1   290	02CD  E2 F3			     loop    _border_hor
+1   291	02CF  C3			     retn
+1   292	02D0			     draw_hor_line   endp
+1   293
+    294					   include lib/figure.asm
+1   295	02D0  ????		     eror dw ?
+1   296	02D2  ????		     x dw ?
+1   297	02D4  ????		     y dw ?
+1   298	02D6  ????		     x0	dw ?
+1   299	02D8  ????		     y0	dw ?
+1   300	02DA  ????		     delta dw ?
+1   301	02DC  ????		     radius dw ?
+1   302	02DE  ??		     figure_color db ?
+1   303
+1   304	02DF			     DrawFigures     proc
+1   305	02DF  8B 36 06C2r		     mov     si	, desk_offset
+1   306	02E3  B9 0040			     mov     cx	, 64
+1   307	02E6  C6 06 04CCr 00 90		     mov     row , 0
+1   308	02EC  C6 06 04CDr 00 90		     mov     column , 0
+1   309	02F2			     _df_cycle:
+1   310	02F2  51			     push    cx
+1   311	02F3  AC			     lodsb
+1   312	02F4  3C 00			     cmp     al	, 0
+1   313	02F6  74 60			     je	     _df_next
+1   314	02F8  50			     push    ax
+1   315	02F9  8A 3E 04CCr		     mov     bh	, row
+1   316	02FD  8A 1E 04CDr		     mov     bl	, column
+1   317	0301  E8 0EB0			     call    GetCoordinates
+1   318	0304  89 0E 02D6r		     mov     x0	, cx
+1   319	0308  83 06 02D6r 14		     add     x0	, 20
+1   320	030D  89 16 02D8r		     mov     y0	, dx
+1   321	0311  83 06 02D8r 14		     add     y0	, 20
+1   322	0316  58			     pop     ax
+1   323	0317  C6 06 02DEr 0F		     mov     figure_color , 0fh
+1   324	031C  3C 01			     cmp     al	, 1
+1   325	031E  75 06			     jne     _df_2
+1   326	0320  E8 0064			     call    DrawFigure
+1   327	0323  EB 33 90			     jmp     _df_next
+1   328	0326			     _df_2:
+1   329	0326  3C 02			     cmp     al	, 2
+1   330	0328  75 0E			     jne     _df_3
+1   331	032A  E8 005A			     call    DrawFigure
+1   332	032D  C6 06 02DEr 04		     mov     figure_color , 04h
+1   333	0332  E8 003C			     call    DrawOkr
+1   334	0335  EB 21 90			     jmp     _df_next
+1   335	0338			     _df_3:
+1   336	0338  C6 06 02DEr 0A		     mov     figure_color , 0ah
+1   337	033D  3C 03			     cmp     al	, 3
+1   338	033F  75 06			     jne     _df_4
+1   339	0341  E8 0043			     call    DrawFigure
+1   340	0344  EB 12 90			     jmp     _df_next
+1   341	0347			     _df_4:
+1   342	0347  E8 003D			     call    DrawFigure
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 7
+main.asm
+
+
+
+1   343	034A  C7 06 02DCr 0008		     mov     radius , 8
+1   344	0350  C6 06 02DEr 04		     mov     figure_color , 04h
+1   345	0355  E8 0019			     call    DrawOkr
+1   346	0358			     _df_next:
+1   347	0358  59			     pop     cx
+1   348	0359  FE 06 04CDr		     inc     column
+1   349	035D  80 3E 04CDr 08		     cmp     column , 8
+1   350	0362  75 0A			     jne     _df_next1
+1   351	0364  C6 06 04CDr 00 90		     mov     column , 0
+1   352	036A  FE 06 04CCr		     inc     row
+1   353	036E			     _df_next1:
+1   354	036E  E2 82			     loop    _df_cycle
+1   355	0370  C3			     ret
+1   356	0371			     endp    DrawFigures
+1   357
+1   358	0371			     DrawOkr proc
+1   359	0371  E8 01C3			     call    HideCursor
+1   360	0374  C7 06 02DCr 0008		     mov	     radius , 8
+1   361	037A  E8 0029			     call    DrawCircle
+1   362	037D  C7 06 02DCr 000E		     mov	     radius , 14
+1   363	0383  E8 01A9			     call    ShowCursor
+1   364	0386  C3			     ret
+1   365	0387			     endp    DrawOkr
+1   366
+1   367				     ;params : x0 , y0 - center
+1   368	0387			     DrawFigure	     proc
+1   369	0387  C7 06 02DCr 000E		     mov     radius , 14
+1   370	038D			     _draw:
+1   371	038D  E8 0016			     call    DrawCircle
+1   372	0390  FF 0E 02DCr		     dec     radius
+1   373	0394  83 3E 02DCr 00		     cmp     radius , 0
+1   374	0399  75 F2			     jne     _draw
+1   375	039B  C3			     ret
+1   376	039C			     endp    DrawFigure
+1   377
+1   378	039C			     Plot proc
+1   379	039C  32 FF			     xor     bh	, bh
+1   380	039E  B4 0C			     mov     Ah, 0Ch
+1   381	03A0  A0 02DEr			     mov     al, figure_color
+1   382	03A3  CD 10			     int     10h
+1   383	03A5  C3			     ret
+1   384	03A6			     Plot endp
+1   385
+1   386	03A6			     drawCircle	proc
+1   387	03A6  C7 06 02D2r 0000		     mov x, 0
+1   388	03AC  A1 02DCr			     mov ax, radius
+1   389	03AF  A3 02D4r			     mov y, ax
+1   390	03B2  C7 06 02DAr 0002		     mov delta,	2
+1   391	03B8  B8 0002			     mov ax, 2
+1   392	03BB  BA 0000			     mov dx, 0
+1   393	03BE  F7 2E 02D4r		     imul y
+1   394	03C2  29 06 02DAr		     sub delta,	ax
+1   395	03C6  C7 06 02D0r 0000		     mov eror, 0
+1   396	03CC  EB 02 90			     jmp ccicle
+1   397	03CF  C3		     finally: ret
+1   398	03D0			     ccicle:
+1   399	03D0  A1 02D4r			     mov ax, y
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 8
+main.asm
+
+
+
+1   400	03D3  3D 0000			     cmp ax, 0
+1   401	03D6  7C F7			     jl	 finally
+1   402	03D8  8B 0E 02D6r		     mov cx, x0
+1   403	03DC  03 0E 02D2r		     add cx, x
+1   404	03E0  8B 16 02D8r		     mov dx, y0
+1   405	03E4  03 16 02D4r		     add dx, y
+1   406	03E8  E8 FFB1			     call Plot
+1   407	03EB  8B 0E 02D6r		     mov cx, x0
+1   408	03EF  03 0E 02D2r		     add cx, x
+1   409	03F3  8B 16 02D8r		     mov dx, y0
+1   410	03F7  2B 16 02D4r		     sub dx, y
+1   411	03FB  E8 FF9E			     call Plot
+1   412	03FE  8B 0E 02D6r		     mov cx, x0
+1   413	0402  2B 0E 02D2r		     sub cx, x
+1   414	0406  8B 16 02D8r		     mov dx, y0
+1   415	040A  03 16 02D4r		     add dx, y
+1   416	040E  E8 FF8B			     call Plot
+1   417	0411  8B 0E 02D6r		     mov cx, x0
+1   418	0415  2B 0E 02D2r		     sub cx, x
+1   419	0419  8B 16 02D8r		     mov dx, y0
+1   420	041D  2B 16 02D4r		     sub dx, y
+1   421	0421  E8 FF78			     call Plot
+1   422	0424  A1 02DAr			     mov ax, delta
+1   423	0427  A3 02D0r			     mov eror, ax
+1   424	042A  A1 02D4r			     mov ax, y
+1   425	042D  01 06 02D0r		     add eror, ax
+1   426	0431  A1 02D0r			     mov ax, eror
+1   427	0434  BA 0000			     mov dx, 0
+1   428	0437  BB 0002			     mov bx, 2
+1   429	043A  F7 EB			     imul bx
+1   430	043C  2D 0001			     sub ax, 1
+1   431	043F  A3 02D0r			     mov eror, ax
+1   432	0442  83 3E 02DAr 00		     cmp delta,	0
+1   433	0447  7F 21			     jg	sstep
+1   434	0449  74 1F			     je	sstep
+1   435	044B  83 3E 02D0r 00		     cmp eror, 0
+1   436	0450  7F 18			     jg	 sstep
+1   437	0452  FF 06 02D2r		     inc x
+1   438	0456  B8 0002			     mov ax, 2
+1   439	0459  BA 0000			     mov dx, 0
+1   440	045C  F7 2E 02D2r		     imul x
+1   441	0460  05 0001			     add ax, 1
+1   442	0463  01 06 02DAr		     add delta,	ax
+1   443	0467  E9 FF66			     jmp ccicle
+1   444	046A			     sstep:
+1   445	046A  A1 02DAr			     mov ax, delta
+1   446	046D  2B 06 02D2r		     sub ax, x
+1   447	0471  BB 0002			     mov bx, 2
+1   448	0474  BA 0000			     mov dx, 0
+1   449	0477  F7 EB			     imul bx
+1   450	0479  2D 0001			     sub ax, 1
+1   451	047C  A3 02D0r			     mov eror, ax
+1   452	047F  83 3E 02DAr 00		     cmp delta,	0
+1   453	0484  7F 25			     jg	tstep
+1   454	0486  83 3E 02D0r 00		     cmp eror, 0
+1   455	048B  7F 1E			     jg	tstep
+1   456	048D  FF 06 02D2r		     inc x
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 9
+main.asm
+
+
+
+1   457	0491  A1 02D2r			     mov ax, x
+1   458	0494  2B 06 02D4r		     sub ax, y
+1   459	0498  BB 0002			     mov bx, 2
+1   460	049B  BA 0000			     mov dx, 0
+1   461	049E  F7 EB			     imul bx
+1   462	04A0  01 06 02DAr		     add delta,	ax
+1   463	04A4  FF 0E 02D4r		     dec y
+1   464	04A8  E9 FF25			     jmp ccicle
+1   465	04AB			     tstep:
+1   466	04AB  FF 0E 02D4r		     dec y
+1   467	04AF  B8 0002			     mov ax, 2
+1   468	04B2  BA 0000			     mov dx, 0
+1   469	04B5  F7 2E 02D4r		     imul y
+1   470	04B9  BB 0001			     mov bx, 1
+1   471	04BC  2B D8			     sub bx, ax
+1   472	04BE  01 1E 02DAr		     add delta,	bx
+1   473	04C2  E9 FF0B			     jmp ccicle
+1   474	04C5			     drawCircle	endp
+    475					   include lib/mouse.asm
+1   476	04C5  00		     click   db	 0
+1   477	04C6  00		     exit    db	 0
+1   478	04C7  00		     cancel  db	 0
+1   479
+1   480	04C8  ????		     x_coord dw	 ?
+1   481	04CA  ????		     y_coord dw	     ?
+1   482
+1   483	04CC  ??		     row	     db	     ?
+1   484	04CD  ??		     column  db	     ?
+1   485
+1   486				     ;ax - offset
+1   487	04CE			     GetCellNumber   proc
+1   488	04CE  53			     push    bx
+1   489	04CF  B3 28			     mov	     bl	, 40
+1   490	04D1  F6 F3			     div	     bl
+1   491	04D3  5B			     pop	     bx
+1   492	04D4  C3			     ret
+1   493	04D5			     endp    GetCellNumber
+1   494
+1   495	04D5			     CheckMouseCoordinates   proc
+1   496	04D5  50			     push    ax
+1   497	04D6  81 3E 04C8r 0140		     cmp	     x_coord , 320
+1   498	04DC  7F 34			     jg		     _cmc_quit
+1   499	04DE  81 3E 04CAr 0140		     cmp	     y_coord , 320
+1   500	04E4  7F 18			     jg		     _cmc_buttons
+1   501	04E6  A1 04C8r			     mov	     ax	, x_coord
+1   502	04E9  E8 FFE2			     call    GetCellNumber
+1   503	04EC  A2 04CDr			     mov	     column , al
+1   504	04EF  A1 04CAr			     mov	     ax	, y_coord
+1   505	04F2  E8 FFD9			     call    GetCellNumber
+1   506	04F5  A2 04CCr			     mov	     row , al
+1   507	04F8  E8 02F8			     call    HandleCell
+1   508	04FB  EB 15 90			     jmp	     _cmc_quit
+1   509	04FE			     _cmc_buttons:
+1   510	04FE  83 3E 04C8r 30		     cmp	     x_coord , 48
+1   511	0503  7F 0D			     jg		     _cmc_quit
+1   512	0505  81 3E 04CAr 014F		     cmp	     y_coord , 335
+1   513	050B  7C 05			     jl		     _cmc_quit
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 10
+main.asm
+
+
+
+1   514	050D  C6 06 04C6r 01		     mov	     exit , 1
+1   515	0512			     _cmc_quit:
+1   516	0512  58			     pop	     ax
+1   517	0513  C3			     ret
+1   518	0514			     endp    CheckMouseCoordinates
+1   519
+1   520	0514			     MouseInit	     proc
+1   521	0514  E8 0007			     call    ExitIfNoMouseAvailable
+1   522	0517  E8 0015			     call    ShowCursor
+1   523	051A  E8 0022			     call    SetHandler
+1   524	051D  C3			     ret
+1   525	051E			     endp    MouseInit
+1   526
+1   527
+1   528	051E			     ExitIfNoMouseAvailable  proc
+1   529	051E  50			     push    ax
+1   530	051F  B8 0000			     mov	     ax	, 0
+1   531	0522  CD 33			     int     33h
+1   532	0524  3D 0000			     cmp	     ax	, 0
+1   533	0527  75 04			     jne	     _einma_exit
+1   534	0529  B4 4C			     mov	     ah	, 4ch
+1   535	052B  CD 21			     int	     21h
+1   536	052D			     _einma_exit:
+1   537	052D  58			     pop	     ax
+1   538	052E  C3			     ret
+1   539	052F			     endp    ExitIfNoMouseAvailable
+1   540
+1   541	052F			     ShowCursor	     proc
+1   542	052F  50			     push    ax
+1   543	0530  B8 0001			     mov	     ax	, 1
+1   544	0533  CD 33			     int	     33h
+1   545	0535  58			     pop	     ax
+1   546	0536  C3			     ret
+1   547	0537			     endp    ShowCursor
+1   548
+1   549	0537			     HideCursor	     proc
+1   550	0537  50			     push    ax
+1   551	0538  B8 0002			 mov	     ax	, 2
+1   552	053B  CD 33			     int	     33h
+1   553	053D  58			     pop	     ax
+1   554	053E  C3			     ret
+1   555	053F			     endp    HideCursor
+1   556
+1   557	053F			     SetHandler	     proc
+1   558	053F  50			     push    ax
+1   559	0540  51			     push    cx
+1   560	0541  52			     push    dx
+1   561	0542  B8 000C			 mov ax	, 0ch
+1   562	0545  B9 0012			 mov cx	, 18
+1   563	0548  BA 0565r			     mov     dx	, offset MouseHandler
+1   564	054B  CD 33			     int     33h
+1   565	054D  5A			     pop	     dx
+1   566	054E  59			     pop	     cx
+1   567	054F  58			     pop	     ax
+1   568	0550  C3			     ret
+1   569	0551			     endp    SetHandler
+1   570
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 11
+main.asm
+
+
+
+1   571	0551			     DisableHandler  proc
+1   572	0551  50			     push    ax
+1   573	0552  51			     push    cx
+1   574	0553  52			     push    dx
+1   575	0554  06			     push    es
+1   576	0555  B4 0C			     mov	     ah	, 0ch
+1   577	0557  33 C9			     xor	     cx	, cx
+1   578	0559  33 D2			     xor	     dx	, dx
+1   579	055B  6A 00			     push    0
+1   580	055D  07			     pop	     es
+1   581	055E  CD 33			     int	     33h
+1   582	0560  07			     pop	     es
+1   583	0561  5A			     pop	     dx
+1   584	0562  59			     pop	     cx
+1   585	0563  58			     pop	     ax
+1   586	0564  C3			     ret
+1   587	0565			     endp    DisableHandler
+1   588
+1   589	0565			     MouseHandler:
+1   590	0565  3D 0002			     cmp	     ax	, 2
+1   591	0568  74 07			     je		     _left
+1   592	056A  2E: C6 06	04C7r 01	     mov	     cs:cancel , 1
+1   593	0570  CB			     retf
+1   594	0571			     _left:
+1   595	0571  2E: C6 06	04C5r 01	     mov	     cs:click ,	1
+1   596	0577  2E: 89 0E	04C8r		     mov	     cs:x_coord	, cx
+1   597	057C  2E: 89 16	04CAr		     mov	     cs:y_coord	, dx
+1   598	0581  CB			     retf
+    599					   include lib/deskcont.asm
+1   600	0582  00 03 00 03 00 03	00+  white_desk	     db	     0,3,0,3,0,3,0,3,3,0,3,0,3,0,3,0,0,3,0,3,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0, +
+    601	      03 03 00 03 00 03	00+  0,0,0,0,0,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0
+    602	      03 00 00 03 00 03	00+
+    603	      03 00 03 00 00 00	00+
+    604	      00 00 00 00 00 00	00+
+    605	      00 00 00 00 00 01	00+
+    606	      01 00 01 00 01 00	00+
+    607	      01 00 01 00 01 00	01+
+    608	      01 00 01 00 01 00	01+
+    609	      00
+1   610	05C2  00 03 00 03 00 03	00+  white_desk_dump db	     0,3,0,3,0,3,0,3,3,0,3,0,3,0,3,0,0,3,0,3,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0, +
+    611	      03 03 00 03 00 03	00+  0,0,0,0,0,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0
+    612	      03 00 00 03 00 03	00+
+    613	      03 00 03 00 00 00	00+
+    614	      00 00 00 00 00 00	00+
+    615	      00 00 00 00 00 01	00+
+    616	      01 00 01 00 01 00	00+
+    617	      01 00 01 00 01 00	01+
+    618	      01 00 01 00 01 00	01+
+    619	      00
+1   620
+1   621	0602  00 01 00 01 00 01	00+  black_desk	     db	     0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0, +
+    622	      01 01 00 01 00 01	00+  0,0,0,0,0,3,0,3,0,3,0,3,0,0,3,0,3,0,3,0,3,3,0,3,0,3,0,3,0
+    623	      01 00 00 01 00 01	00+
+    624	      01 00 01 00 00 00	00+
+    625	      00 00 00 00 00 00	00+
+    626	      00 00 00 00 00 03	00+
+    627	      03 00 03 00 03 00	00+
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 12
+main.asm
+
+
+
+    628	      03 00 03 00 03 00	03+
+    629	      03 00 03 00 03 00	03+
+    630	      00
+1   631	0642  00 01 00 01 00 01	00+  black_desk_dump db	     0,1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0, +
+    632	      01 01 00 01 00 01	00+  0,0,0,0,0,3,0,3,0,3,0,3,0,0,3,0,3,0,3,0,3,3,0,3,0,3,0,3,0
+    633	      01 00 00 01 00 01	00+
+    634	      01 00 01 00 00 00	00+
+    635	      00 00 00 00 00 00	00+
+    636	      00 00 00 00 00 03	00+
+    637	      03 00 03 00 03 00	00+
+    638	      03 00 03 00 03 00	03+
+    639	      03 00 03 00 03 00	03+
+    640	      00
+1   641
+1   642
+1   643
+1   644				     ;black_desk     db		     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,3,0,0,0,0, +
+    645				     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1   646
+1   647				     ; black_desk    db	     0,0,0,0,0,0,0,0,
+1   648								     ; 0,0,0,0,0,0,1,0,
+1   649								     ; 0,0,0,0,0,3,0,0,
+1   650								     ; 0,0,0,0,0,0,0,0,
+1   651								     ; 0,0,0,0,0,0,0,0,
+1   652								     ; 0,0,0,0,0,0,0,0,
+1   653								     ; 0,0,0,0,0,0,0,0,
+1   654								     ; 0,0,0,0,0,0,0,0
+1   655
+1   656				     ; white_desk    db	     0,0,0,0,0,0,0,0,
+1   657								     ; 0,0,0,0,0,0,0,0,
+1   658								     ; 0,0,0,0,0,0,0,0,
+1   659								     ; 0,0,0,0,0,0,0,0,
+1   660								     ; 0,0,0,0,0,0,0,0,
+1   661								     ; 0,0,3,0,0,0,0,0,
+1   662								     ; 0,1,0,0,0,0,0,0,
+1   663								     ; 0,0,0,0,0,0,0,0
+1   664
+1   665				     ;black_desk     db	     0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0, +
+    666				     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1   667				     ;black_desk_dump	     db	     0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0, +
+    668				     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1   669
+1   670				     ;white_desk     db	     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, +
+    671				     0,0,0,0,0,0,0,3,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1   672				     ;white_desk_dump	     db	     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, +
+    673				     0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1   674
+1   675				     ; black_desk    db	     0,0,0,0,0,0,0,0,
+1   676								     ; 0,0,3,0,0,0,0,0,
+1   677								     ; 0,0,0,0,0,0,0,0,
+1   678								     ; 0,0,0,0,0,0,0,0,
+1   679								     ; 0,0,0,0,0,0,0,0,
+1   680								     ; 0,0,0,0,0,0,0,0,
+1   681								     ; 0,0,0,0,0,1,0,0,
+1   682								     ; 0,0,0,0,0,0,0,0
+1   683
+1   684	0682  40*(??)		     active_desk     db	     64	     dup(?)
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 13
+main.asm
+
+
+
+1   685
+1   686	06C2  ????		     desk_offset     dw	     ?
+1   687
+1   688	06C4  ??		     MyMove  db	     ?
+1   689
+1   690	06C5  00		     isSelected	     db	     0
+1   691
+1   692	06C6  64*(????)		     moves_buff	     dw	     100 dup (?)
+1   693	078E  00		     moves_count     db	     0
+1   694
+1   695	078F  ??		     figure_row	     db	     ?
+1   696	0790  ??		     figure_column   db	     ?
+1   697	0791  ??		     figure_value    db	     ?
+1   698
+1   699	0792  ??		     last_figure_row	     db	     ?
+1   700	0793  ??		     last_figure_column	     db	     ?
+1   701	0794  ??		     last_figure_value	     db	     ?
+1   702
+1   703	0795  ??		     black_count	     db		     ?
+1   704	0796  ??		     white_count	     db		     ?
+1   705
+1   706	0797  ??		     WaitingForResponse	     db	     ?
+1   707
+1   708	0798  00		     GameFinished    db		     0
+1   709	0799  00		     GameCount	     db	     0
+1   710
+1   711				     ;bx - param to save
+1   712	079A			     SaveMove	     proc
+1   713	079A  53			     push    bx
+1   714	079B  52			     push    dx
+1   715	079C  33 D2			     xor	     dx	, dx
+1   716	079E  02 16 078Er		     add	     dl	, moves_count
+1   717	07A2  02 D2			     add	     dl	, dl
+1   718	07A4  81 C2 06C6r		     add	     dx	, offset moves_buff
+1   719	07A8  87 D3			     xchg    dx	, bx
+1   720	07AA  2E: 89 17			     mov	     cs:[bx] , dx
+1   721	07AD  FE 06 078Er		     inc	     moves_count
+1   722	07B1  5A			     pop	     dx
+1   723	07B2  5B			     pop	     bx
+1   724	07B3  C3			     ret
+1   725	07B4			     endp    SaveMove
+1   726
+1   727	07B4			     CancelAllActions	     proc
+1   728	07B4  80 3E 06C5r 00		     cmp	     isSelected	, 0
+1   729	07B9  74 37			     je		     _cal_quit
+1   730	07BB  80 3E 241Ar 01		     cmp	     chints_show , 1
+1   731	07C0  74 10			     je		     _caa_hide_checker_hints
+1   732	07C2  80 3E 24D7r 01		     cmp	     khints_show , 1
+1   733	07C7  74 03			     je		     _caa_hide_king_hints
+1   734	07C9  EB 0A 90			     jmp	     _caa_skip
+1   735	07CC			     _caa_hide_king_hints:
+1   736	07CC  E8 1D6A			     call    HideKingHints
+1   737	07CF  EB 04 90			     jmp	     _caa_skip
+1   738	07D2			     _caa_hide_checker_hints:
+1   739	07D2  E8 1CA7			     call    HideCheckerHints
+1   740	07D5			     _caa_skip:
+1   741	07D5  8A 1E 0793r		     mov	     bl	, last_figure_column
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 14
+main.asm
+
+
+
+1   742	07D9  8A 3E 0792r		     mov	     bh	, last_figure_row
+1   743	07DD  E8 09D4			     call    GetCoordinates
+1   744	07E0  33 C0			     xor     ax	, ax
+1   745	07E2  E8 0104			     call    RecolorCell
+1   746	07E5  E8 FAF7			     call    DrawFigures
+1   747	07E8  C6 06 06C5r 00		     mov     isSelected	, 0
+1   748	07ED  C6 06 078Er 00		     mov     moves_count , 0
+1   749	07F2			     _cal_quit:
+1   750	07F2  C3			     ret
+1   751	07F3			     endp    CancelAllActions
+1   752
+1   753
+1   754				     ;row , column
+1   755	07F3			     HandleCell	     proc
+1   756	07F3  80 3E 06C5r 01		     cmp	     isSelected	, 1
+1   757	07F8  74 29			     je		     _hcell_move
+1   758	07FA  50			     push    ax
+1   759	07FB  A0 2594r			     mov	     al	, color
+1   760	07FE  A2 0828r			     mov	     procedure_color , al
+1   761	0801  58			     pop	     ax
+1   762
+1   763	0802  53			     push    bx
+1   764	0803  8A 1E 04CDr		     mov	     bl	, column
+1   765	0807  8A 3E 04CCr		     mov	     bh	, row
+1   766	080B  E8 1A53			     call    CheckSelectLegal
+1   767	080E  5B			     pop	     bx
+1   768	080F  80 3E 2260r 01		     cmp	     legal , 1
+1   769	0814  74 09			     je		     _hcell_skip
+1   770	0816  C6 06 08C5r 00 90		     mov	     sucess , 0
+1   771	081C  EB 08 90			     jmp	     _hcell_quit
+1   772	081F			     _hcell_skip:
+1   773	081F  E8 0007			     call    HandleSelect
+1   774	0822  C3			     ret
+1   775	0823			     _hcell_move:
+1   776	0823  E8 00AB			     call    HandleMove
+1   777	0826			     _hcell_quit:
+1   778	0826  C3			     ret
+1   779	0827			     endp    HandleCell
+1   780
+1   781
+1   782	0827  ??		     cell_value	     db	     ?
+1   783
+1   784	0828  00		     procedure_color db	     0
+1   785
+1   786				     ;row,column,procedure_color
+1   787	0829			     HandleSelect    proc near
+1   788	0829  50			     push    ax
+1   789	082A  A0 2594r			     mov	     al	, color
+1   790	082D  3A 06 0828r		     cmp	     al	, procedure_color
+1   791	0831  58			     pop	     ax
+1   792	0832  75 08			     jne	     _hs_1
+1   793	0834  80 3E 06C4r 01		     cmp	     MyMove , 1
+1   794	0839  74 01			     je		     _hs_1
+1   795	083B  C3			     retn
+1   796	083C			     _hs_1:
+1   797	083C  C6 06 08C5r 01 90		     mov	     sucess , 1
+1   798	0842  C6 06 078Er 00		     mov	     moves_count , 0
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 15
+main.asm
+
+
+
+1   799	0847  C6 06 0D38r 00 90		     mov	     EnemiesDestroyed ,	0
+1   800	084D  E8 0904			     call    CopyDeskToActiveDesk
+1   801	0850  8A 1E 04CDr		     mov	     bl	, column
+1   802	0854  8A 3E 04CCr		     mov	     bh	, row
+1   803	0858  E8 0935			     call    GetElementFromBoard
+1   804	085B  3C 00			     cmp	     al	, 0
+1   805	085D  74 5F			     je		     _quit_sh_bad
+1   806	085F  A2 0791r			     mov	     figure_value , al
+1   807	0862  A2 0794r			     mov	     last_figure_value , al
+1   808	0865  80 3E 0828r 01		     cmp	     procedure_color , 1
+1   809	086A  75 19			     jne	     _hs_black
+1   810	086C			     _hs_white:
+1   811	086C  3C 03			     cmp	     al	, 3
+1   812	086E  74 4E			     je		     _quit_sh_bad
+1   813	0870  3C 04			     cmp	     al	, 4
+1   814	0872  74 4A			     je		     _quit_sh_bad
+1   815	0874  53			     push    bx
+1   816	0875  3C 01			     cmp	     al	, 1
+1   817	0877  75 06			     jne     _hs_white1
+1   818	0879  E8 06BE			     call    CheckerSelect
+1   819	087C  EB 1D 90			     jmp	     _hs_continue
+1   820	087F			     _hs_white1:
+1   821	087F  E8 0326			     call    KingSelect
+1   822	0882  EB 17 90			     jmp	     _hs_continue
+1   823	0885			     _hs_black:
+1   824	0885  3C 01			     cmp	     al	, 1
+1   825	0887  74 35			     je		     _quit_sh_bad
+1   826	0889  3C 02			     cmp	     al	, 2
+1   827	088B  74 31			     je		     _quit_sh_bad
+1   828	088D  53			     push    bx
+1   829	088E  3C 03			     cmp	     al	, 3
+1   830	0890  75 06			     jne	     _hs_black1
+1   831	0892  E8 06A5			     call    CheckerSelect
+1   832	0895  EB 04 90			     jmp	     _hs_continue
+1   833	0898			     _hs_black1:
+1   834	0898  E8 030D			     call    KingSelect
+1   835	089B			     _hs_continue:
+1   836	089B  5B			     pop	     bx
+1   837	089C  80 3E 08C5r 00		     cmp	     sucess , 0
+1   838	08A1  74 21			     je		     _quit_sh
+1   839	08A3  C6 06 06C5r 01		     mov	     isSelected	, 1
+1   840	08A8  88 3E 078Fr		     mov	     figure_row	, bh
+1   841	08AC  88 1E 0790r		     mov	     figure_column , bl
+1   842	08B0  88 3E 0792r		     mov	     last_figure_row , bh
+1   843	08B4  88 1E 0793r		     mov	     last_figure_column	, bl
+1   844	08B8  E8 FEDF			     call    SaveMove
+1   845	08BB  EB 07 90			     jmp	     _quit_sh
+1   846	08BE			     _quit_sh_bad:
+1   847	08BE  C6 06 08C5r 00 90		     mov	     sucess , 0
+1   848	08C4			     _quit_sh:
+1   849	08C4  C3			     retn
+1   850	08C5			     endp    HandleSelect
+1   851
+1   852	08C5  01		     sucess  db	     1
+1   853
+1   854	08C6			     Alert   proc
+1   855	08C6  50			     push    ax
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 16
+main.asm
+
+
+
+1   856	08C7  52			     push    dx
+1   857	08C8  B4 02			     mov	     ah	, 02h
+1   858	08CA  B2 21			     mov	     dl	, 21h
+1   859	08CC  CD 21			     int	     21h
+1   860	08CE  5A			     pop	     dx
+1   861	08CF  58			     pop	     ax
+1   862	08D0  C3			     ret
+1   863	08D1			     endp    Alert
+1   864
+1   865
+1   866				     ;row , column , last_figure_row , last_figure_column
+1   867	08D1			     HandleMove	     proc
+1   868	08D1  80 3E 0794r 01		     cmp     last_figure_value , 1
+1   869	08D6  74 0D			     je	     _hm_checker
+1   870	08D8  80 3E 0794r 03		     cmp     last_figure_value , 3
+1   871	08DD  74 06			     je	     _hm_checker
+1   872	08DF			     _hw_king:
+1   873	08DF  E8 0312			     call    HandleKingMove
+1   874	08E2  EB 04 90			     jmp     _hm_quit
+1   875	08E5			     _hm_checker:
+1   876	08E5  E8 046D			     call    HandleCheckerMove
+1   877	08E8			     _hm_quit:
+1   878	08E8  C3			     ret
+1   879	08E9			     endp    HandleMove
+1   880
+1   881
+1   882				     ;cx - x-off
+1   883				     ;dx - y-off
+1   884				     ;al - cell	color
+1   885				     ;ah - figure color
+1   886	08E9			     RecolorCell     proc
+1   887	08E9  50			     push    ax
+1   888	08EA  51			     push    cx
+1   889	08EB  52			     push    dx
+1   890
+1   891
+1   892	08EC  50			     push    ax
+1   893	08ED  51			     push    cx
+1   894	08EE  52			     push    dx
+1   895	08EF  42			     inc     dx
+1   896	08F0  41			     inc     cx
+1   897	08F1  8B D9			     mov     bx	, cx
+1   898	08F3  B9 0028			     mov     cx	, 40
+1   899	08F6  50			     push    ax
+1   900	08F7  E8 FC3D			     call    HideCursor
+1   901	08FA  58			     pop     ax
+1   902	08FB			     _rc_loop:
+1   903	08FB  53			     push    bx
+1   904	08FC  51			     push    cx
+1   905	08FD  B9 0028			     mov     cx	, 40
+1   906	0900  E8 F9BD			     call    draw_hor_line
+1   907	0903  42			     inc     dx
+1   908	0904  59			     pop     cx
+1   909	0905  5B			     pop     bx
+1   910	0906  E2 F3			     loop    _rc_loop
+1   911	0908  5A			     pop     dx
+1   912	0909  59			     pop     cx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 17
+main.asm
+
+
+
+1   913	090A  58			     pop     ax
+1   914	090B  88 26 02DEr		     mov     figure_color , ah
+1   915	090F  89 0E 02D6r		     mov     x0	, cx
+1   916	0913  83 06 02D6r 14		     add     x0	, 20
+1   917	0918  89 16 02D8r		     mov     y0	, dx
+1   918	091C  83 06 02D8r 14		     add     y0	, 20
+1   919	0921  E8 FA63			     call    DrawFigure
+1   920	0924  E8 FC08			     call    ShowCursor
+1   921
+1   922	0927  5A			     pop     dx
+1   923	0928  59			     pop     cx
+1   924	0929  58			     pop     ax
+1   925
+1   926	092A  C3			     ret
+1   927	092B			     endp    RecolorCell
+1   928
+1   929
+    930					   include lib/king/knmoves.asm
+1   931	092B  14*(0000)		     KingMoves		     dw	     20	     dup     (0)
+1   932	0953  00		     KingMovesCount	     db	     0
+1   933	0954  14*(0000)		     KingMustMoves	     dw	     20	     dup     (0)
+1   934	097C  00		     KingMustMovesCount	     db	     0
+1   935	097D  14*(0000)		     KingEnemy		     dw	     20	     dup     (0)
+1   936	09A5  00		     KingEnemyCount	     db	     0
+1   937	09A6  00		     Iteration		     db	     0
+1   938	09A7  14*(00)		     KingMustMovesAfterMove  db	     20	     dup     (0)
+1   939	09BB  00		     KingMustMovesAfterMoveCount db  0
+1   940
+1   941	09BC  FF 01 01 01 01 FF	FF+  KingMovesShifts db	     -1	, 1 , 1	, 1 , 1	, -1 , -1 ,-1
+    942	      FF
+1   943
+1   944	09C4  ????		     KingShift	     dw	     ?
+1   945	09C6  ????		     KingShift1	     dw	     ?
+1   946
+1   947				     ;bl-column	, bh - row
+1   948	09C8			     GetKingMoves    proc
+1   949	09C8  C6 06 0953r 00		     mov	     KingMovesCount , 0
+1   950	09CD  C6 06 097Cr 00		     mov	     KingMustMovesCount	, 0
+1   951	09D2  C6 06 09A5r 00		     mov	     KingEnemyCount , 0
+1   952	09D7  C6 06 09BBr 00		     mov	     KingMustMovesAfterMoveCount , 0
+1   953	09DC  C6 06 09A6r 00		     mov	     Iteration , 0
+1   954	09E1  B9 0004			     mov	     cx	, 4
+1   955	09E4  BE 09BCr			     mov	     si	, offset KingMovesShifts
+1   956	09E7			     _gkm_loop:
+1   957	09E7  51			 push	     cx
+1   958	09E8  AD			 lodsw
+1   959	09E9  A3 09C4r			     mov	     KingShift , ax
+1   960	09EC  53			     push    bx
+1   961	09ED  E8 000B			 call	     ProceedDirection
+1   962	09F0  5B			     pop	     bx
+1   963	09F1  FE 06 09A6r		 inc	     Iteration
+1   964	09F5  59			     pop	     cx
+1   965	09F6  E2 EF			     loop    _gkm_loop
+1   966	09F8  C3			     ret
+1   967	09F9			     endp    GetKingMoves
+1   968
+1   969	09F9  ????		     EnemyCoordinates	     dw	     ?
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 18
+main.asm
+
+
+
+1   970
+1   971				     ;bl - column , bh - row , Iteration , KingShift
+1   972	09FB			     ProceedDirection	     proc
+1   973	09FB			     _pfd_before_enemy:
+1   974	09FB  E8 00F3			     call    CheckBounds
+1   975	09FE  80 3E 0A5Er 01		     cmp	     bounds_ok , 1
+1   976	0A03  75 58			     jne	     _pfd_quit
+1   977	0A05  8B 16 09C4r		     mov	     dx	, KingShift
+1   978	0A09  02 DA			     add	     bl	, dl
+1   979	0A0B  02 FE			     add	     bh	, dh
+1   980	0A0D  E8 0780			     call    GetElementFromBoard
+1   981	0A10  3C 00			     cmp	     al	, 0
+1   982	0A12  75 05			     jne	     _pfd_check_color
+1   983	0A14  E8 015C			     call    AddMove
+1   984	0A17  EB E2			     jmp	     _pfd_before_enemy
+1   985	0A19			     _pfd_check_color:
+1   986	0A19  E8 012D			     call    CheckElementColor
+1   987	0A1C  80 3E 0B48r 01		     cmp	     isMine , 1
+1   988	0A21  74 3A			     je		     _pfd_quit
+1   989	0A23  89 1E 09F9r		     mov	     EnemyCoordinates ,	bx
+1   990	0A27			     _pfd_after_enemy:
+1   991	0A27  E8 00C7			     call    CheckBounds
+1   992	0A2A  80 3E 0A5Er 01		     cmp     bounds_ok , 1
+1   993	0A2F  75 2C			     jne     _pfd_quit
+1   994	0A31  8B 16 09C4r		     mov     dx	, KingShift
+1   995	0A35  02 DA			     add     bl	, dl
+1   996	0A37  02 FE			     add     bh	, dh
+1   997	0A39  E8 0754			     call    GetElementFromBoard
+1   998	0A3C  3C 00			     cmp     al	, 0
+1   999	0A3E  75 1D			     jne     _pfd_quit
+1  1000	0A40  E8 007C			     call    MoveAfterMove
+1  1001	0A43  57			     push    di
+1  1002	0A44  50			     push    ax
+1  1003	0A45  BF 09A7r			     mov     di	, offset KingMustMovesAfterMove
+1  1004	0A48  51			     push    cx
+1  1005	0A49  33 C9			     xor     cx	, cx
+1  1006	0A4B  8A 0E 097Cr		     mov     cl	, KingMustMovesCount
+1  1007	0A4F  03 F9			     add     di	, cx
+1  1008	0A51  59			     pop     cx
+1  1009	0A52  A0 0A5Fr			     mov     al	, NeedMoveAfter
+1  1010	0A55  AA			     stosb
+1  1011	0A56  58			     pop     ax
+1  1012	0A57  5F			     pop     di
+1  1013	0A58  E8 012B			     call    AddMustMove
+1  1014	0A5B  EB CA			     jmp     _pfd_after_enemy
+1  1015	0A5D			     _pfd_quit:
+1  1016	0A5D  C3			     ret
+1  1017	0A5E			     endp    ProceedDirection
+1  1018
+1  1019	0A5E  01		     bounds_ok	     db	     1
+1  1020
+1  1021	0A5F  00		     NeedMoveAfter   db	     0
+1  1022	0A60  ????		     my_start_coordinates    dw	     ?
+1  1023
+1  1024	0A62			     ProceedDirectionAfter   proc
+1  1025	0A62			     _pda_beforeEnemy:
+1  1026	0A62  E8 008C			     call    CheckBounds
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 19
+main.asm
+
+
+
+1  1027	0A65  80 3E 0A5Er 01		     cmp     bounds_ok , 1
+1  1028	0A6A  75 52			     jne     _pda_quit
+1  1029	0A6C  8B 16 09C6r		     mov     dx	, KingShift1
+1  1030	0A70  02 DA			     add     bl	, dl
+1  1031	0A72  02 FE			     add     bh	, dh
+1  1032	0A74  3B 1E 09F9r		     cmp     bx	, EnemyCoordinates
+1  1033	0A78  74 E8			     je	     _pda_beforeEnemy
+1  1034	0A7A  50			     push    ax
+1  1035	0A7B  A0 0793r			     mov     al	, last_figure_column
+1  1036	0A7E  8A 26 0792r		     mov     ah	, last_figure_row
+1  1037	0A82  A3 0A60r			     mov     my_start_coordinates , ax
+1  1038	0A85  58			     pop     ax
+1  1039	0A86  3B 1E 0A60r		     cmp     bx	, my_start_coordinates
+1  1040	0A8A  74 D6			     je	     _pda_beforeEnemy
+1  1041	0A8C  E8 0701			     call    GetElementFromBoard
+1  1042	0A8F  3C 00			     cmp     al	, 0
+1  1043	0A91  74 CF			     je	     _pda_beforeEnemy
+1  1044	0A93  E8 00B3			     call    CheckElementColor
+1  1045	0A96  80 3E 0B48r 01		     cmp     isMine , 1
+1  1046	0A9B  74 21			     je	     _pda_quit
+1  1047	0A9D  E8 0051			     call    CheckBounds
+1  1048	0AA0  80 3E 0A5Er 01		     cmp     bounds_ok , 1
+1  1049	0AA5  75 17			     jne     _pda_quit
+1  1050	0AA7  8B 16 09C6r		     mov     dx	, KingShift1
+1  1051	0AAB  02 DA			     add     bl	, dl
+1  1052	0AAD  02 FE			     add     bh	, dh
+1  1053	0AAF  E8 06DE			     call    GetElementFromBoard
+1  1054	0AB2  3C 00			     cmp     al	, 0
+1  1055	0AB4  75 08			     jne     _pda_quit
+1  1056	0AB6  FE 06 0A5Fr		     inc     NeedMoveAfter
+1  1057	0ABA  FE 06 09BBr		     inc     KingMustMovesAfterMoveCount
+1  1058	0ABE			     _pda_quit:
+1  1059	0ABE  C3			     ret
+1  1060	0ABF			     endp    ProceedDirectionAfter
+1  1061
+1  1062
+1  1063
+1  1064	0ABF			     MoveAfterMove   proc
+1  1065	0ABF  56			     push    si
+1  1066	0AC0  53			     push    bx
+1  1067	0AC1  51			     push    cx
+1  1068	0AC2  57			     push    di
+1  1069	0AC3  50			     push    ax
+1  1070	0AC4  33 C0			     xor     ax	, ax
+1  1071	0AC6  A0 09A6r			     mov     al	, Iteration
+1  1072	0AC9  50			     push    ax
+1  1073	0ACA  BE 09BCr			     mov     si	, offset KingMovesShifts
+1  1074	0ACD  B9 0004			     mov     cx	, 4
+1  1075	0AD0  C6 06 09A6r 00		     mov     Iteration , 0
+1  1076	0AD5  C6 06 0A5Fr 00		     mov     NeedMoveAfter , 0
+1  1077	0ADA			     _mam_loop:
+1  1078	0ADA  51			     push    cx
+1  1079	0ADB  AD			     lodsw
+1  1080	0ADC  A3 09C6r			     mov     KingShift1	, ax
+1  1081	0ADF  53			     push    bx
+1  1082	0AE0  E8 FF7F			     call    ProceedDirectionAfter
+1  1083	0AE3  5B			     pop     bx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 20
+main.asm
+
+
+
+1  1084	0AE4  59			     pop     cx
+1  1085	0AE5  E2 F3			     loop    _mam_loop
+1  1086	0AE7			     _mam_quit:
+1  1087	0AE7  58			     pop     ax
+1  1088	0AE8  A2 09A6r			     mov     Iteration , al
+1  1089	0AEB  58			     pop     ax
+1  1090	0AEC  5F			     pop     di
+1  1091	0AED  59			     pop     cx
+1  1092	0AEE  5B			     pop     bx
+1  1093	0AEF  5E			     pop     si
+1  1094	0AF0  C3			     ret
+1  1095	0AF1			     endp    MoveAfterMove
+1  1096
+1  1097				     ;bx - coordinates
+1  1098	0AF1			     CheckBounds     proc
+1  1099	0AF1  C6 06 0A5Er 01		     mov     bounds_ok , 1
+1  1100	0AF6  80 3E 09A6r 00		     cmp     Iteration , 0
+1  1101	0AFB  74 11			     je	     _cb_0
+1  1102	0AFD  80 3E 09A6r 01		     cmp     Iteration , 1
+1  1103	0B02  74 17			     je	     _cb_1
+1  1104	0B04  80 3E 09A6r 02		     cmp     Iteration , 2
+1  1105	0B09  74 1D			     je	     _cb_2
+1  1106	0B0B  EB 28 90			     jmp     _cb_3
+1  1107	0B0E			     _cb_0:
+1  1108	0B0E  80 FB 00			     cmp     bl	, 0
+1  1109	0B11  74 2F			     je	     _cb_bad
+1  1110	0B13  80 FF 07			     cmp     bh	, 7
+1  1111	0B16  74 2A			     je	     _cb_bad
+1  1112	0B18  EB 2D 90			     jmp     _cb_quit
+1  1113	0B1B			     _cb_1:
+1  1114	0B1B  80 FB 07			     cmp     bl	, 7
+1  1115	0B1E  74 22			     je	     _cb_bad
+1  1116	0B20  80 FF 07			     cmp     bh	, 7
+1  1117	0B23  74 1D			     je	     _cb_bad
+1  1118	0B25  EB 20 90			     jmp     _cb_quit
+1  1119	0B28			     _cb_2:
+1  1120	0B28  80 FB 07			     cmp     bl	, 7
+1  1121	0B2B  74 15			     je	     _cb_bad
+1  1122	0B2D  80 FF 00			     cmp     bh	, 0
+1  1123	0B30  74 10			     je	     _cb_bad
+1  1124	0B32  EB 13 90			     jmp     _cb_quit
+1  1125	0B35			     _cb_3:
+1  1126	0B35  80 FB 00			     cmp     bl	, 0
+1  1127	0B38  74 08			     je	     _cb_bad
+1  1128	0B3A  80 FF 00			     cmp     bh	, 0
+1  1129	0B3D  74 03			     je	     _cb_bad
+1  1130	0B3F  EB 06 90			     jmp     _cb_quit
+1  1131	0B42			     _cb_bad:
+1  1132	0B42  C6 06 0A5Er 00		     mov     bounds_ok , 0
+1  1133	0B47			     _cb_quit:
+1  1134	0B47  C3			     ret
+1  1135	0B48			     endp    CheckBounds
+1  1136
+1  1137	0B48  00		     isMine  db	     0
+1  1138
+1  1139	0B49			     CheckElementColor	     proc
+1  1140	0B49  C6 06 0B48r 01		 mov	     isMine , 1
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 21
+main.asm
+
+
+
+1  1141	0B4E  80 3E 0828r 01		 cmp	     procedure_color , 1
+1  1142	0B53  74 10			     je		     _cec_white
+1  1143	0B55  3C 03			     cmp	     al	, 3
+1  1144	0B57  74 19			     je		     _cec_quit
+1  1145	0B59  3C 04			     cmp	     al	, 4
+1  1146	0B5B  74 15			     je		     _cec_quit
+1  1147	0B5D  C6 06 0B48r 00		     mov	     isMine , 0
+1  1148	0B62  EB 0E 90			     jmp	     _cec_quit
+1  1149	0B65			     _cec_white:
+1  1150	0B65  3C 01			     cmp	     al	, 1
+1  1151	0B67  74 09			     je		     _cec_quit
+1  1152	0B69  3C 02			     cmp	     al	, 2
+1  1153	0B6B  74 05			     je		     _cec_quit
+1  1154	0B6D  C6 06 0B48r 00		     mov	     isMine , 0
+1  1155	0B72			     _cec_quit:
+1  1156	0B72  C3			     ret
+1  1157	0B73			     endp    CheckElementColor
+1  1158
+1  1159				     ;bx - coordinates
+1  1160	0B73			     AddMove proc
+1  1161	0B73  BF 092Br			 mov	     di	, offset KingMoves
+1  1162	0B76  B0 02			     mov	     al	, 2
+1  1163	0B78  F6 26 0953r		     mul	     KingMovesCount
+1  1164	0B7C  03 F8			     add	     di	, ax
+1  1165	0B7E  8B C3			     mov	     ax	, bx
+1  1166	0B80  AB			     stosw
+1  1167	0B81  FE 06 0953r		     inc	     KingMovesCount
+1  1168	0B85  C3			     ret
+1  1169	0B86			     endp    AddMove
+1  1170
+1  1171				     ;bx - coordinates
+1  1172	0B86			     AddMustMove     proc
+1  1173	0B86  BF 0954r			 mov	     di	, offset KingMustMoves
+1  1174	0B89  B0 02			     mov	     al	, 2
+1  1175	0B8B  F6 26 097Cr		     mul	     KingMustMovesCount
+1  1176	0B8F  50			     push    ax
+1  1177	0B90  03 F8			     add	     di	, ax
+1  1178	0B92  8B C3			     mov	     ax	, bx
+1  1179	0B94  AB			     stosw
+1  1180	0B95  58			     pop	     ax
+1  1181	0B96  BF 097Dr			     mov	     di	, offset KingEnemy
+1  1182	0B99  03 F8			     add	     di	, ax
+1  1183	0B9B  A1 09F9r			     mov	     ax	, EnemyCoordinates
+1  1184	0B9E  AB			     stosw
+1  1185	0B9F  FE 06 097Cr		     inc	     KingMustMovesCount
+1  1186	0BA3  FE 06 09A5r		     inc	     KingEnemyCount
+1  1187	0BA7  C3			 ret
+1  1188	0BA8			     endp    AddMustMove
+   1189					   include lib/king/knselect.asm
+1  1190	0BA8			     KingSelect	     proc
+1  1191	0BA8  E8 002B			     call    KingIsSelectable
+1  1192	0BAB  80 3E 08C5r 00		     cmp	     sucess , 0
+1  1193	0BB0  74 23			     je		     _ks_quit
+1  1194	0BB2  E8 05FF			 call	     GetCoordinates
+1  1195	0BB5  8A 26 2595r		     mov	     ah	, my_color
+1  1196	0BB9  B0 04			     mov	     al	, 4
+1  1197	0BBB  E8 FD2B			     call    RecolorCell
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 22
+main.asm
+
+
+
+1  1198	0BBE  C7 06 02DCr 0008		     mov	     radius , 8
+1  1199	0BC4  C6 06 02DEr 04		     mov	     figure_color , 4
+1  1200	0BC9  E8 F96B			     call    HideCursor
+1  1201	0BCC  E8 F7D7			     call    DrawCircle
+1  1202	0BCF  E8 F95D			     call    ShowCursor
+1  1203	0BD2  E8 1903			     call    ShowKingHints
+1  1204	0BD5			     _ks_quit:
+1  1205	0BD5  C3			     ret
+1  1206	0BD6			     endp    KingSelect
+1  1207
+1  1208
+1  1209	0BD6			     KingIsSelectable	     proc
+1  1210	0BD6  C6 06 08C5r 01		     mov	     sucess , 1
+1  1211	0BDB  53			     push    bx
+1  1212	0BDC  E8 FDE9			     call    GetKingMoves
+1  1213	0BDF  5B			     pop	     bx
+1  1214	0BE0  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  1215	0BE5  75 0C			     jne	     _is_quit
+1  1216	0BE7  80 3E 0953r 00		     cmp	     KingMovesCount , 0
+1  1217	0BEC  75 05			     jne	     _is_quit
+1  1218	0BEE  C6 06 08C5r 00		     mov	     sucess , 0
+1  1219	0BF3			     _is_quit:
+1  1220	0BF3  C3			     ret
+1  1221	0BF4			     endp    KingIsSelectable
+   1222					   include lib/king/kncontr.asm
+1  1223	0BF4			     HandleKingMove  proc
+1  1224	0BF4  8A 1E 04CDr		     mov	     bl	, column
+1  1225	0BF8  8A 3E 04CCr		     mov	     bh	, row
+1  1226	0BFC  53			     push    bx
+1  1227	0BFD  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  1228	0C02  75 12			     jne	     _hkn_hard_move
+1  1229	0C04			     _hkn_usual_move:
+1  1230	0C04  C6 06 0D54r 00 90		     mov	     moveType ,	0
+1  1231	0C0A  33 C9			     xor	     cx	, cx
+1  1232	0C0C  8A 0E 0953r		     mov	     cl	, KingMovesCount
+1  1233	0C10  BE 092Br			     mov	     si	, offset KingMoves
+1  1234	0C13  EB 10 90			     jmp	     _hkn_check_move_contains
+1  1235	0C16			     _hkn_hard_move:
+1  1236	0C16  C6 06 0D54r 01 90		     mov	     moveType ,	1
+1  1237	0C1C  33 C9			     xor	     cx	, cx
+1  1238	0C1E  8A 0E 097Cr		     mov	     cl	, KingMustMovesCount
+1  1239	0C22  BE 0954r			     mov	     si	, offset KingMustMoves
+1  1240	0C25			     _hkn_check_move_contains:
+1  1241	0C25  E8 0075			     call    KingCheckIsMoveRight
+1  1242	0C28  5B			     pop	     bx
+1  1243	0C29  80 3E 0D36r 01		     cmp	     isRightMove , 1
+1  1244	0C2E  75 40			     jne	     _hkm_quit
+1  1245	0C30  E8 FB67			     call    SaveMove
+1  1246	0C33  80 3E 0D54r 00		     cmp	     moveType ,	0
+1  1247	0C38  75 09			     jne	     _hkm_long_move
+1  1248	0C3A  E8 00A4			     call    MoveKing
+1  1249	0C3D  E8 18F9			     call    HideKingHints
+1  1250	0C40  EB 20 90			     jmp	     _hkm_print
+1  1251	0C43			     _hkm_long_move:
+1  1252	0C43  E8 00B7			     call    KingDestroyEnemy
+1  1253	0C46  E8 0028			     call    DeleteKingPreviousPlace
+1  1254	0C49  E8 FD7C			     call    GetKingMoves
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 23
+main.asm
+
+
+
+1  1255	0C4C  80 3E 097Cr 00		 cmp	     KingMustMovesCount	, 0
+1  1256	0C51  74 09			     je		     _hkm_finish_long_move
+1  1257	0C53  E8 1882			     call    ShowKingHints
+1  1258	0C56  E8 0028			     call    KingContinueLongMove
+1  1259	0C59  EB 15 90			     jmp	     _hkm_quit
+1  1260	0C5C			     _hkm_finish_long_move:
+1  1261	0C5C  E8 18DA			     call    HideKingHints
+1  1262	0C5F  E8 007F			     call    MoveKing
+1  1263	0C62			     _hkm_print:
+1  1264	0C62  50			     push    ax
+1  1265	0C63  A0 2594r			     mov	     al	, color
+1  1266	0C66  3A 06 0828r		     cmp	     al	, procedure_color
+1  1267	0C6A  58			     pop	     ax
+1  1268	0C6B  75 03			     jne	     _hkm_quit
+1  1269	0C6D  E8 1561			     call    Print
+1  1270	0C70			     _hkm_quit:
+1  1271	0C70  C3			     ret
+1  1272	0C71			     endp    HandleKingMove
+1  1273
+1  1274	0C71			     DeleteKingPreviousPlace proc
+1  1275	0C71  53			     push    bx
+1  1276	0C72  8A 1E 0793r		     mov	     bl	, last_figure_column
+1  1277	0C76  8A 3E 0792r		     mov	     bh	, last_figure_row
+1  1278	0C7A  B2 00			     mov	     dl	, 0
+1  1279	0C7C  E8 0524			     call    WriteValueToActiveDesk
+1  1280	0C7F  5B			     pop	     bx
+1  1281	0C80  C3			     ret
+1  1282	0C81			     endp    DeleteKingPreviousPlace
+1  1283
+1  1284
+1  1285	0C81			     KingContinueLongMove proc
+1  1286	0C81  C6 06 0E22r 04 90		     mov	     move_color	, 4
+1  1287	0C87  53			     push    bx
+1  1288	0C88  E8 0198			     call    MoveChecker
+1  1289
+1  1290	0C8B  C6 06 02DEr 04		     mov	     figure_color , 04h
+1  1291	0C90  E8 F6DE			     call    DrawOkr
+1  1292
+1  1293	0C93  5B			     pop	     bx
+1  1294	0C94  88 1E 0793r		     mov	     last_figure_column	, bl
+1  1295	0C98  88 3E 0792r		     mov	     last_figure_row , bh
+1  1296	0C9C  C3			     ret
+1  1297	0C9D			     endp    KingContinueLongMove
+1  1298
+1  1299
+1  1300				     ; KingFinishLongMove    proc
+1  1301					     ; mov	     move_color	, 0
+1  1302					     ; call  MoveChecker
+1  1303
+1  1304					     ; mov	     figure_color , 04h
+1  1305					     ; call  DrawOkr
+1  1306
+1  1307					     ; ;call CopyActiveDeskToDesk
+1  1308
+1  1309					     ; mov	     WaitingForResponse	, 1
+1  1310
+1  1311					     ; mov	     isSelected	, 0
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 24
+main.asm
+
+
+
+1  1312					     ; ret
+1  1313				     ; endp  KingFinishLongMove
+1  1314
+1  1315				     ;bl - column , bh - row , si - pointer to collection ,  cx	- count
+1  1316	0C9D			     KingCheckIsMoveRight    proc
+1  1317	0C9D  53			     push    bx
+1  1318	0C9E  C6 06 0D37r 00 90		     mov	     MoveIndex , 0
+1  1319	0CA4  C6 06 0D36r 01 90		     mov	     isRightMove , 1
+1  1320	0CAA			     _kcimr_loop:
+1  1321	0CAA  AD			     lodsw
+1  1322	0CAB  3B C3			     cmp	     ax	, bx
+1  1323	0CAD  74 0F			     je		     _kcimr_check_move_after_move
+1  1324	0CAF  FE 06 0D37r		     inc	     MoveIndex
+1  1325	0CB3  E2 F5			     loop    _kcimr_loop
+1  1326	0CB5  C6 06 0D36r 00 90		     mov	     isRightMove , 0
+1  1327	0CBB  EB 22 90			     jmp	     _kcimr_quit
+1  1328	0CBE			     _kcimr_check_move_after_move:
+1  1329	0CBE  80 3E 09BBr 00		 cmp	     KingMustMovesAfterMoveCount , 0
+1  1330	0CC3  74 1A			     je		     _kcimr_quit
+1  1331	0CC5  56			     push    si
+1  1332	0CC6  BE 09A7r			     mov	     si	, offset KingMustMovesAfterMove
+1  1333	0CC9  51			     push    cx
+1  1334	0CCA  33 C9			     xor	     cx	, cx
+1  1335	0CCC  8A 0E 0D37r		     mov	     cl	, MoveIndex
+1  1336	0CD0  03 F1			     add	     si	, cx
+1  1337	0CD2  59			     pop	     cx
+1  1338	0CD3  AC			     lodsb
+1  1339	0CD4  3C 00			     cmp	     al	, 0
+1  1340	0CD6  75 06			     jne	     _kcimr_good
+1  1341	0CD8  C6 06 0D36r 00 90		     mov     isRightMove , 0
+1  1342	0CDE			     _kcimr_good:
+1  1343	0CDE  5E			     pop	     si
+1  1344	0CDF			     _kcimr_quit:
+1  1345	0CDF  5B			     pop	     bx
+1  1346	0CE0  C3			     ret
+1  1347	0CE1			     endp    KingCheckIsMoveRight
+1  1348
+1  1349	0CE1			     MoveKing		     proc
+1  1350	0CE1  C6 06 0E22r 00 90		     mov	     move_color	, 0
+1  1351	0CE7  E8 0139			     call    MoveChecker
+1  1352
+1  1353	0CEA  C6 06 02DEr 04		     mov	     figure_color , 04h
+1  1354	0CEF  E8 F67F			     call    DrawOkr
+1  1355
+1  1356	0CF2  C6 06 0797r 01		     mov	     WaitingForResponse	, 1
+1  1357
+1  1358	0CF7  C6 06 06C5r 00		     mov	     isSelected	, 0
+1  1359
+1  1360	0CFC  C3			     ret
+1  1361	0CFD			     endp    MoveKing
+1  1362
+1  1363
+1  1364				     ; KingRightMoveWithoutHack	     proc
+1  1365					     ; ;mov	     dl	, last_figure_value
+1  1366					     ; ;push bx
+1  1367					     ; ;call WriteValueToActiveDesk
+1  1368					     ; ;call GetCoordinates
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 25
+main.asm
+
+
+
+1  1369					     ; ;mov	     al	, 0
+1  1370					     ; ;call GetColor
+1  1371					     ; ;pop	     bx
+1  1372					     ; ;mov	     dl	, 0
+1  1373					     ; ;mov	     bl	, figure_column
+1  1374					     ; ;mov	     bh	, figure_row
+1  1375					     ; ;push bx
+1  1376					     ; ;call WriteValueToActiveDesk
+1  1377					     ; ;pop	     bx
+1  1378					     ; ;call GetCoordinates
+1  1379					     ; ;xor	     ax	, ax
+1  1380					     ; ;call RecolorCell
+1  1381					     ; ;call CopyActiveDeskToDesk
+1  1382
+1  1383					     ; mov	     move_color	, 0
+1  1384					     ; call  MoveChecker
+1  1385
+1  1386					     ; mov	     figure_color , 04h
+1  1387					     ; call  DrawOkr
+1  1388
+1  1389					     ; mov	     WaitingForResponse	, 1
+1  1390
+1  1391					     ; mov	     isSelected	, 0
+1  1392					     ; ;call DrawFigures
+1  1393					     ; ret
+1  1394				     ; endp  KingRightMoveWithoutHack
+1  1395
+1  1396				     ;bx enemy_params
+1  1397	0CFD			     KingDestroyEnemy	     proc
+1  1398	0CFD  53			     push    bx
+1  1399	0CFE  BE 097Dr			 mov	     si	, offset KingEnemy
+1  1400	0D01  B0 02			     mov	     al	, 2
+1  1401	0D03  F6 26 0D37r		     mul	     MoveIndex
+1  1402	0D07  03 F0			     add	     si	, ax
+1  1403	0D09  AD			     lodsw
+1  1404	0D0A  8B D8			     mov	     bx	, ax
+1  1405	0D0C  53			     push    bx
+1  1406	0D0D  FE 06 0D38r		     inc	     EnemiesDestroyed
+1  1407	0D11  B2 00			 mov	     dl	, 0
+1  1408	0D13  E8 048D			     call    WriteValueToActiveDesk
+1  1409	0D16  5B			     pop	     bx
+1  1410	0D17  E8 049A			     call    GetCoordinates
+1  1411	0D1A  33 C0			     xor	     ax	, ax
+1  1412	0D1C  E8 FBCA			     call    RecolorCell
+1  1413	0D1F  5B			     pop	     bx
+1  1414	0D20  C3			     ret
+1  1415	0D21			     endp    KingDestroyEnemy
+1  1416
+1  1417	0D21			     help    proc
+1  1418	0D21  53			 push	     bx
+1  1419	0D22  50			     push    ax
+1  1420	0D23  52			     push    dx
+1  1421	0D24  B4 02			     mov	     ah	, 02h
+1  1422	0D26  B2 30			     mov	     dl	, 30h
+1  1423	0D28  02 D3			     add	     dl	, bl
+1  1424	0D2A  CD 21			     int	     21h
+1  1425	0D2C  B2 30			     mov	     dl	, 30h
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 26
+main.asm
+
+
+
+1  1426	0D2E  02 D7			     add	     dl	, bh
+1  1427	0D30  CD 21			     int	     21h
+1  1428	0D32  5A			     pop	     dx
+1  1429	0D33  58			     pop	     ax
+1  1430	0D34  5B			     pop	     bx
+1  1431	0D35  C3			     ret
+1  1432	0D36			     endp    help
+1  1433
+   1434					   include lib/checker/chcontro.asm
+1  1435	0D36  00		     isRightMove     db	     0
+1  1436	0D37  00		     MoveIndex	     db	     0
+1  1437
+1  1438	0D38  00		     EnemiesDestroyed	     db	     0
+1  1439
+1  1440				     ;bl - column , bh - row , si - pointer to collection ,  cx	- count
+1  1441	0D39			     CheckIsMoveRight	     proc
+1  1442	0D39  C6 06 0D37r 00		     mov	     MoveIndex , 0
+1  1443	0D3E  C6 06 0D36r 01		     mov	     isRightMove , 1
+1  1444	0D43			     _cimr_loop:
+1  1445	0D43  AD			     lodsw
+1  1446	0D44  3B C3			     cmp	     ax	, bx
+1  1447	0D46  74 0B			     je		     _cimr_quit
+1  1448	0D48  FE 06 0D37r		     inc	     MoveIndex
+1  1449	0D4C  E2 F5			     loop    _cimr_loop
+1  1450	0D4E  C6 06 0D36r 00		     mov	     isRightMove , 0
+1  1451	0D53			     _cimr_quit:
+1  1452	0D53  C3			     ret
+1  1453	0D54			     endp    CheckIsMoveRight
+1  1454
+1  1455	0D54  ??		     moveType	     db	     ?	     ; 0 - near	, 1 - long
+1  1456
+1  1457				     ;row,column
+1  1458	0D55			     HandleCheckerMove	     proc
+1  1459	0D55  8A 1E 04CDr		     mov	     bl	, column
+1  1460	0D59  8A 3E 04CCr		     mov	     bh	, row
+1  1461	0D5D  53			     push    bx
+1  1462	0D5E  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  1463	0D63  75 11			     jne     _hcm_hard_move
+1  1464	0D65			     _hcm_usual_move:
+1  1465	0D65  C6 06 0D54r 00		     mov	     moveType ,	0
+1  1466	0D6A  33 C9			     xor	     cx	, cx
+1  1467	0D6C  8A 0E 0F77r		     mov	     cl	, CheckerMovesCount
+1  1468	0D70  BE 0F73r			     mov	     si	, offset CheckerMoves
+1  1469	0D73  EB 0F 90			     jmp	     _hcm_check_move_contains
+1  1470	0D76			     _hcm_hard_move:
+1  1471	0D76  C6 06 0D54r 01		     mov	     moveType ,	1
+1  1472	0D7B  33 C9			     xor     cx	, cx
+1  1473	0D7D  8A 0E 0F80r		     mov	     cl	, CheckerMustMovesCount
+1  1474	0D81  BE 0F78r			     mov	     si	, offset CheckerMustMoves
+1  1475	0D84			     _hcm_check_move_contains:
+1  1476	0D84  E8 FFB2			     call    CheckIsMoveRight
+1  1477	0D87  5B			     pop	     bx
+1  1478	0D88  80 3E 0D36r 01		     cmp	     isRightMove , 1
+1  1479	0D8D  75 72			     jne	     _hcm_quit
+1  1480	0D8F  80 3E 0D54r 00		     cmp	     moveType ,	0
+1  1481	0D94  75 0F			     jne	     _hcm_long_move
+1  1482
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 27
+main.asm
+
+
+
+1  1483	0D96  E8 FA01			     call    SaveMove
+1  1484	0D99  E8 0066			     call    CheckIsKing
+1  1485	0D9C  E8 16DD			     call    HideCheckerHints
+1  1486	0D9F  E8 012A			     call    RightMoveWithoutHack
+1  1487
+1  1488	0DA2  EB 4F 90			     jmp	     _hcm_print
+1  1489	0DA5			     _hcm_long_move:
+1  1490	0DA5  53			     push    bx
+1  1491					     ;call   ShowCheckerHints
+1  1492
+1  1493	0DA6  E8 F9F1			     call    SaveMove
+1  1494	0DA9  E8 0056			     call    CheckIsKing
+1  1495	0DAC  E8 00F9			     call    DestroyEnemy
+1  1496	0DAF  5B			     pop	     bx
+1  1497	0DB0  80 3E 0794r 01		     cmp	     last_figure_value , 1
+1  1498	0DB5  74 1A			     je		     _hcm_still_checker
+1  1499	0DB7  80 3E 0794r 03		     cmp	     last_figure_value , 3
+1  1500	0DBC  74 13			     je		     _hcm_still_checker
+1  1501
+1  1502
+1  1503	0DBE  E8 FC07			     call    GetKingMoves
+1  1504	0DC1  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  1505					     ;je	     _hcm_finish_long_move
+1  1506	0DC6  74 1C			     je		     _hcm_finish_king_long_move
+1  1507	0DC8  E8 170D			     call    ShowKingHints
+1  1508	0DCB  E8 00B1			     call    ContinueLongMove
+1  1509
+1  1510	0DCE  EB 31 90			     jmp	     _hcm_quit
+1  1511	0DD1			     _hcm_still_checker:
+1  1512
+1  1513	0DD1  E8 01BF			     call    GetCheckerMoves
+1  1514	0DD4  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  1515	0DD9  74 12			     je		     _hcm_finish_long_move
+1  1516	0DDB  E8 163D			     call    ShowCheckerHints
+1  1517	0DDE  E8 009E			     call    ContinueLongMove
+1  1518	0DE1  EB 1E 90			     jmp	     _hcm_quit
+1  1519	0DE4			     _hcm_finish_king_long_move:
+1  1520	0DE4  E8 1752			     call    HideKingHints
+1  1521	0DE7  E8 006C			     call    FinishLongMove
+1  1522	0DEA  EB 07 90			     jmp	     _hcm_print
+1  1523	0DED			     _hcm_finish_long_move:
+1  1524	0DED  E8 168C			     call    HideCheckerHints
+1  1525	0DF0  E8 0063			     call    FinishLongMove
+1  1526	0DF3			     _hcm_print:
+1  1527	0DF3  50			     push    ax
+1  1528	0DF4  A0 2594r			     mov	     al	, color
+1  1529	0DF7  3A 06 0828r		     cmp	     al	, procedure_color
+1  1530	0DFB  58			     pop	     ax
+1  1531	0DFC  75 03			     jne	     _hcm_quit
+1  1532	0DFE  E8 13D0			     call    Print
+1  1533	0E01			     _hcm_quit:
+1  1534	0E01  C3			     ret
+1  1535	0E02			     endp    HandleCheckerMove
+1  1536
+1  1537
+1  1538	0E02			     CheckIsKing     proc
+1  1539	0E02  50			     push    ax
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 28
+main.asm
+
+
+
+1  1540	0E03  A0 2594r			     mov	     al	, color
+1  1541	0E06  3A 06 0828r		     cmp	     al	, procedure_color
+1  1542	0E0A  75 08			     jne	     _enemy_move
+1  1543	0E0C			     _my_move:
+1  1544	0E0C  80 FF 00			     cmp	     bh	, 0
+1  1545	0E0F  74 0B			     je		     _cik_king
+1  1546	0E11  EB 0D 90			     jmp	     _cik_quit
+1  1547	0E14			     _enemy_move:
+1  1548	0E14  80 FF 07			     cmp	     bh	, 7
+1  1549	0E17  74 03			     je		     _cik_king
+1  1550	0E19  EB 05 90			     jmp	     _cik_quit
+1  1551	0E1C			     _cik_king:
+1  1552	0E1C  FE 06 0794r		     inc	     last_figure_value
+1  1553	0E20			     _cik_quit:
+1  1554	0E20  58			     pop	     ax
+1  1555	0E21  C3			     ret
+1  1556	0E22			     endp    CheckIsKing
+1  1557
+1  1558
+1  1559	0E22  00		     move_color	     db	     0
+1  1560
+1  1561	0E23			     MoveChecker     proc
+1  1562	0E23  53			 push	     bx
+1  1563	0E24  8A 1E 0793r		     mov	     bl	, last_figure_column
+1  1564	0E28  8A 3E 0792r		     mov	     bh	, last_figure_row
+1  1565	0E2C  B2 00			     mov	     dl	, 0
+1  1566	0E2E  53			     push    bx
+1  1567	0E2F  E8 0371			     call    WriteValueToActiveDesk
+1  1568	0E32  5B			     pop	     bx
+1  1569	0E33  53			     push    bx
+1  1570	0E34  E8 037D			     call    GetCoordinates
+1  1571	0E37  33 C0			     xor	     ax	, ax
+1  1572	0E39  E8 FAAD			     call    RecolorCell
+1  1573	0E3C  5B			     pop	     bx
+1  1574	0E3D  5B			     pop	     bx
+1  1575	0E3E  53			     push    bx
+1  1576	0E3F  E8 0372			     call    GetCoordinates
+1  1577	0E42  A0 0E22r			     mov	     al	, move_color
+1  1578	0E45  E8 00DA			     call    GetFigureColor
+1  1579	0E48  E8 FA9E			     call    RecolorCell
+1  1580	0E4B  5B			     pop	     bx
+1  1581	0E4C  53			     push    bx
+1  1582	0E4D  8A 16 0794r		     mov	     dl	, last_figure_value
+1  1583	0E51  E8 034F			     call    WriteValueToActiveDesk
+1  1584	0E54  5B			     pop	     bx
+1  1585	0E55  C3			     ret
+1  1586	0E56			     endp    MoveChecker
+1  1587
+1  1588				     ;bl - column , bh - row
+1  1589	0E56			     FinishLongMove  proc
+1  1590	0E56  C6 06 0E22r 00		     mov	     move_color	, 0
+1  1591	0E5B  E8 FFC5			     call    MoveChecker
+1  1592
+1  1593	0E5E  80 3E 0794r 01		     cmp	     last_figure_value , 1
+1  1594	0E63  74 0F			     je		     _flm_skip
+1  1595	0E65  80 3E 0794r 03		     cmp	     last_figure_value , 3
+1  1596	0E6A  74 08			     je		     _flm_skip
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 29
+main.asm
+
+
+
+1  1597
+1  1598	0E6C  C6 06 02DEr 04		     mov	     figure_color , 04h
+1  1599	0E71  E8 F4FD			     call    DrawOkr
+1  1600
+1  1601	0E74			     _flm_skip:
+1  1602					     ;call   CopyActiveDeskToDesk
+1  1603	0E74  C6 06 0797r 01		     mov	     WaitingForResponse	, 1
+1  1604
+1  1605	0E79  C6 06 06C5r 00		     mov	     isSelected	, 0
+1  1606	0E7E  C3			     ret
+1  1607	0E7F			     endp    FinishLongMove
+1  1608
+1  1609				     ;bl - column , bh - row
+1  1610	0E7F			     ContinueLongMove proc
+1  1611	0E7F  C6 06 0E22r 04		     mov	     move_color	, 4
+1  1612	0E84  53			     push    bx
+1  1613	0E85  E8 FF9B			     call    MoveChecker
+1  1614	0E88  5B			     pop	     bx
+1  1615	0E89  88 1E 0793r		     mov	     last_figure_column	, bl
+1  1616	0E8D  88 3E 0792r		     mov	     last_figure_row , bh
+1  1617	0E91  80 3E 0794r 01		     cmp	     last_figure_value , 1
+1  1618	0E96  74 0F			     je		     _clm_quit
+1  1619	0E98  80 3E 0794r 03		     cmp	     last_figure_value , 3
+1  1620	0E9D  74 08			     je		     _clm_quit
+1  1621
+1  1622
+1  1623
+1  1624					     ;call   GetCoordinates
+1  1625	0E9F  C6 06 02DEr 04		     mov	     figure_color , 04h
+1  1626	0EA4  E8 F4CA			     call    DrawOkr
+1  1627
+1  1628	0EA7			     _clm_quit:
+1  1629	0EA7  C3			     ret
+1  1630	0EA8			     endp    ContinueLongMove
+1  1631
+1  1632				     ;bx enemy_params
+1  1633	0EA8			     DestroyEnemy    proc
+1  1634	0EA8  53			     push    bx
+1  1635	0EA9  BE 0F81r			 mov	     si	, offset CheckerEnemy
+1  1636	0EAC  B0 02			     mov	     al	, 2
+1  1637	0EAE  F6 26 0D37r		     mul	     MoveIndex
+1  1638	0EB2  03 F0			     add	     si	, ax
+1  1639	0EB4  AD			     lodsw
+1  1640	0EB5  8B D8			     mov	     bx	, ax
+1  1641	0EB7  53			     push    bx
+1  1642	0EB8  B2 00			 mov	     dl	, 0
+1  1643	0EBA  E8 02E6			     call    WriteValueToActiveDesk
+1  1644	0EBD  5B			     pop	     bx
+1  1645	0EBE  E8 02F3			     call    GetCoordinates
+1  1646	0EC1  33 C0			     xor	     ax	, ax
+1  1647	0EC3  E8 FA23			     call    RecolorCell
+1  1648	0EC6  5B			     pop	     bx
+1  1649	0EC7  FE 06 0D38r		     inc	     EnemiesDestroyed
+1  1650	0ECB  C3			     ret
+1  1651	0ECC			     endp    DestroyEnemy
+1  1652
+1  1653				     ;bl - column , bh - row
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 30
+main.asm
+
+
+
+1  1654	0ECC			     RightMoveWithoutHack    proc
+1  1655	0ECC  8A 16 0794r		     mov	     dl	, last_figure_value
+1  1656	0ED0  53			     push    bx
+1  1657	0ED1  53			     push    bx
+1  1658	0ED2  E8 02CE			 call	     WriteValueToActiveDesk
+1  1659	0ED5  5B			     pop	     bx
+1  1660	0ED6  E8 02DB			     call    GetCoordinates
+1  1661	0ED9  E8 0046			     call    GetFigureColor
+1  1662	0EDC  B0 00			     mov	     al	, 0
+1  1663	0EDE  E8 FA08			     call    RecolorCell
+1  1664
+1  1665
+1  1666	0EE1  80 3E 0794r 01		     cmp	     last_figure_value , 1
+1  1667	0EE6  74 0F			     je		     _rmwh_skip_king
+1  1668	0EE8  80 3E 0794r 03		     cmp	     last_figure_value , 3
+1  1669	0EED  74 08			     je		     _rmwh_skip_king
+1  1670
+1  1671	0EEF  C6 06 02DEr 04		     mov	     figure_color , 04h
+1  1672	0EF4  E8 F47A			     call    DrawOkr
+1  1673
+1  1674	0EF7			     _rmwh_skip_king:
+1  1675	0EF7  B2 00			     mov	     dl	, 0
+1  1676
+1  1677	0EF9  8A 1E 0790r		     mov	     bl	, figure_column
+1  1678	0EFD  8A 3E 078Fr		     mov	     bh	, figure_row
+1  1679	0F01  53			     push    bx
+1  1680	0F02  E8 029E			 call	     WriteValueToActiveDesk
+1  1681	0F05  5B			     pop	     bx
+1  1682	0F06  E8 02AB			     call    GetCoordinates
+1  1683	0F09  33 C0			     xor	     ax	, ax
+1  1684	0F0B  E8 F9DB			     call    RecolorCell
+1  1685	0F0E  C6 06 0797r 01		     mov	     WaitingForResponse	, 1
+1  1686	0F13  5B			     pop	     bx
+1  1687	0F14  88 1E 0793r		     mov	     last_figure_column	, bl
+1  1688	0F18  88 3E 0792r		     mov	     last_figure_row , bh
+1  1689	0F1C  C6 06 06C5r 00		     mov	     isSelected	, 0
+1  1690	0F21  C3			     ret
+1  1691	0F22			     endp    RightMoveWithoutHack
+1  1692
+1  1693				     ;figure color in ah
+1  1694	0F22			     GetFigureColor  proc
+1  1695	0F22  50			     push    ax
+1  1696	0F23  A0 2594r			     mov	     al	, color
+1  1697	0F26  3A 06 0828r		     cmp	     al	, procedure_color
+1  1698	0F2A  75 08			     jne	     _gfc_enemy_color
+1  1699	0F2C  58			     pop	     ax
+1  1700	0F2D  8A 26 2595r		     mov	     ah	, my_color
+1  1701	0F31  EB 06 90			     jmp	     _gfc_quit
+1  1702	0F34			     _gfc_enemy_color:
+1  1703	0F34  58			     pop	     ax
+1  1704	0F35  8A 26 2596r		     mov	     ah	, enemy_color
+1  1705	0F39			     _gfc_quit:
+1  1706	0F39  C3			     ret
+1  1707	0F3A			     endp    GetFigureColor
+1  1708
+   1709					   include lib/checker/chselect.asm
+1  1710	0F3A			     CheckerSelect   proc
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 31
+main.asm
+
+
+
+1  1711	0F3A  50			     push    ax
+1  1712	0F3B  E8 0019			     call    CheckerIsSelectable
+1  1713	0F3E  80 3E 08C5r 00		     cmp	     sucess , 0
+1  1714	0F43  74 10			     je		     _cs_quit
+1  1715	0F45			     _cs_select:
+1  1716	0F45  E8 026C			     call    GetCoordinates
+1  1717	0F48  B0 04			     mov	     al	, 4
+1  1718	0F4A  E8 FFD5			     call    GetFigureColor
+1  1719	0F4D  E8 F999			     call    RecolorCell
+1  1720	0F50  53			     push    bx
+1  1721	0F51  E8 14C7			     call    ShowCheckerHints
+1  1722	0F54  5B			     pop	     bx
+1  1723	0F55			     _cs_quit:
+1  1724	0F55  58			     pop	     ax
+1  1725	0F56  C3			     ret
+1  1726	0F57			     endp    CheckerSelect
+1  1727
+1  1728	0F57			     CheckerIsSelectable     proc
+1  1729	0F57  C6 06 08C5r 01		     mov	     sucess , 1
+1  1730	0F5C  E8 0034			     call    GetCheckerMoves
+1  1731	0F5F  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  1732	0F64  75 0C			     jne	     _cis_quit
+1  1733	0F66  80 3E 0F77r 00		     cmp	     CheckerMovesCount , 0
+1  1734	0F6B  75 05			     jne	     _cis_quit
+1  1735	0F6D  C6 06 08C5r 00		     mov	     sucess , 0
+1  1736	0F72			     _cis_quit:
+1  1737	0F72  C3			     ret
+1  1738	0F73			     endp    CheckerIsSelectable
+   1739					   include lib/checker/chmoves.asm
+1  1740	0F73  02*(0000)		     CheckerMoves	     dw	2    dup (0)
+1  1741	0F77  00		     CheckerMovesCount	     db	0
+1  1742	0F78  04*(0000)		     CheckerMustMoves	     dw	4    dup (0)
+1  1743	0F80  00		     CheckerMustMovesCount   db	0
+1  1744	0F81  04*(0000)		     CheckerEnemy	     dw	4    dup (0)
+1  1745	0F89  0000		     CheckerEnemyCount	     dw	0
+1  1746	0F8B  FF 01 01 01 01 FF	FF+  CheckerFarShifts	     db	     -1	, 1 , 1	,1 , 1 , -1 , -1 , -1
+   1747	      FF
+1  1748
+1  1749				     ;bl - column , bh - row
+1  1750	0F93			     GetCheckerMoves proc
+1  1751	0F93  53			     push    bx
+1  1752	0F94  53			     push    bx
+1  1753	0F95  C7 06 0F89r 0000		     mov	     CheckerEnemyCount , 0
+1  1754	0F9B  BF 0F73r			     mov	     di	, offset CheckerMoves
+1  1755	0F9E  C6 06 0F77r 00		     mov	     CheckerMovesCount , 0
+1  1756	0FA3  E8 009C			     call    GetCheckerNearMoves
+1  1757	0FA6  BF 0F78r			     mov	     di	, offset CheckerMustMoves
+1  1758	0FA9  BE 0F8Br			     mov	     si	, offset CheckerFarShifts
+1  1759	0FAC  C6 06 0F80r 00		     mov	     CheckerMustMovesCount , 0
+1  1760	0FB1  5B			     pop	     bx
+1  1761	0FB2  E8 002A			     call    GetCheckerFarMoves
+1  1762	0FB5  5B			     pop	     bx
+1  1763	0FB6  C3			     ret
+1  1764	0FB7			     endp    GetCheckerMoves
+1  1765
+1  1766	0FB7  00		     gcfm_bad	     db	0
+1  1767
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 32
+main.asm
+
+
+
+1  1768	0FB8			     CheckByColor    proc
+1  1769	0FB8  80 3E 0828r 00		     cmp	     procedure_color , 0
+1  1770	0FBD  75 0B			     jne	     _gcfm_white
+1  1771	0FBF  3C 03			     cmp	     al	, 3
+1  1772	0FC1  74 12			     je		     _cbc_bad
+1  1773	0FC3  3C 04			     cmp	     al	, 4
+1  1774	0FC5  74 0E			     je		     _cbc_bad
+1  1775	0FC7  EB 11 90			     jmp	     _cbc_ok
+1  1776	0FCA			     _gcfm_white:
+1  1777	0FCA  3C 01			     cmp	     al	, 1
+1  1778	0FCC  74 07			     je		     _cbc_bad
+1  1779	0FCE  3C 02			     cmp	     al	, 2
+1  1780	0FD0  74 03			     je		     _cbc_bad
+1  1781	0FD2  EB 06 90			     jmp	     _cbc_ok
+1  1782	0FD5			     _cbc_bad:
+1  1783	0FD5  C6 06 0FB7r 01		 mov	     gcfm_bad ,	1
+1  1784	0FDA			     _cbc_ok:
+1  1785	0FDA  C3			     ret
+1  1786	0FDB			     endp    CheckByColor
+1  1787
+1  1788	0FDB  ????		     shift   dw	     ?
+1  1789	0FDD  ????		     enemy_cell	     dw	     ?
+1  1790
+1  1791	0FDF			     GetCheckerFarMoves	     proc
+1  1792	0FDF  B9 0004			     mov     cx	, 4
+1  1793	0FE2			     _gcfm_cycle:
+1  1794	0FE2  51			     push    cx
+1  1795	0FE3  53			     push    bx
+1  1796	0FE4  AD			     lodsw
+1  1797	0FE5  A3 0FDBr			     mov	     shift , ax
+1  1798	0FE8  E8 00F5			     call    PreventBadMoves
+1  1799	0FEB  80 3E 0FB7r 01		     cmp	     gcfm_bad ,	1
+1  1800	0FF0  74 46			     je		     _gcfm_next
+1  1801	0FF2  A1 0FDBr			     mov	     ax	, shift
+1  1802	0FF5  02 D8			     add	     bl	, al
+1  1803	0FF7  02 FC			     add	     bh	, ah
+1  1804	0FF9  E8 0194			     call    GetElementFromBoard
+1  1805	0FFC  3C 00			     cmp	     al	, 0
+1  1806	0FFE  74 38			     je		     _gcfm_next
+1  1807	1000  E8 FFB5			     call    CheckByColor
+1  1808	1003  80 3E 0FB7r 01		     cmp	     gcfm_bad ,	1
+1  1809	1008  74 2E			     je		     _gcfm_next
+1  1810	100A  89 1E 0FDDr		     mov	     enemy_cell	, bx
+1  1811	100E  A1 0FDBr			     mov	     ax	, shift
+1  1812	1011  02 D8			     add	     bl	, al
+1  1813	1013  02 FC			     add	     bh	, ah
+1  1814	1015  E8 0178			     call    GetElementFromBoard
+1  1815	1018  3C 00			     cmp	     al	, 0
+1  1816	101A  75 1C			     jne	     _gcfm_next
+1  1817	101C  8B C3			     mov	     ax	, bx
+1  1818	101E  AB			     stosw
+1  1819	101F  57			     push    di
+1  1820	1020  BF 0F81r			     mov	     di	, offset CheckerEnemy
+1  1821	1023  03 3E 0F89r		     add	     di	, CheckerEnemyCount
+1  1822	1027  03 3E 0F89r		     add	     di	, CheckerEnemyCount
+1  1823	102B  A1 0FDDr			     mov	     ax	, enemy_cell
+1  1824	102E  AB			     stosw
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 33
+main.asm
+
+
+
+1  1825	102F  FF 06 0F89r		     inc	     CheckerEnemyCount
+1  1826	1033  5F			     pop	     di
+1  1827	1034  FE 06 0F80r		     inc	     CheckerMustMovesCount
+1  1828	1038			     _gcfm_next:
+1  1829	1038  C6 06 0FB7r 00		     mov	     gcfm_bad ,	0
+1  1830	103D  5B			     pop	     bx
+1  1831	103E  59			     pop	     cx
+1  1832	103F  E2 A1			     loop    _gcfm_cycle
+1  1833	1041			     _gcfm_quit:
+1  1834	1041  C3			     ret
+1  1835	1042			     endp    GetCheckerFarMoves
+1  1836
+1  1837	1042			     GetCheckerNearMoves     proc
+1  1838	1042  53			     push    bx
+1  1839	1043  E8 0062			     call    RightDirection
+1  1840	1046  80 3E 10A7r 01		     cmp	     RightOk , 1
+1  1841	104B  75 0E			     jne	     _gcnm_skip
+1  1842	104D  E8 0140			     call    GetElementFromBoard
+1  1843	1050  3C 00			     cmp	     al	, 0
+1  1844	1052  75 07			     jne	     _gcnm_skip
+1  1845	1054  8B C3			     mov	     ax	, bx
+1  1846	1056  AB			     stosw
+1  1847	1057  FE 06 0F77r		     inc     CheckerMovesCount
+1  1848	105B			     _gcnm_skip:
+1  1849	105B  5B			     pop	     bx
+1  1850	105C  E8 0010			     call    LeftDirection
+1  1851	105F  E8 012E			     call    GetElementFromBoard
+1  1852	1062  3C 00			     cmp     al	, 0
+1  1853	1064  75 07			     jne     _gcnm_quit
+1  1854	1066  8B C3			     mov     ax	, bx
+1  1855	1068  AB			     stosw
+1  1856	1069  FE 06 0F77r		     inc     CheckerMovesCount
+1  1857	106D			     _gcnm_quit:
+1  1858	106D  C3			     ret
+1  1859	106E			     endp    GetCheckerNearMoves
+1  1860
+1  1861	106E  01		     LeftOk  db	     1
+1  1862	106F			     LeftDirection   proc
+1  1863	106F  C6 06 106Er 01		     mov	     LeftOk , 1
+1  1864	1074  50			     push    ax
+1  1865	1075  A0 2594r			     mov	     al	, color
+1  1866	1078  3A 06 0828r		     cmp	     al	, procedure_color
+1  1867	107C  75 11			     jne	     _ld_back_direction
+1  1868	107E  80 FF 00			     cmp	     bh	, 0
+1  1869	1081  74 1D			     je		     _ld_bad
+1  1870	1083  80 FB 00			     cmp	     bl	, 0
+1  1871	1086  74 18			     je		     _ld_bad
+1  1872	1088  FE CB			     dec     bl
+1  1873	108A  FE CF			     dec     bh
+1  1874	108C  EB 17 90			     jmp	     _ld_quit
+1  1875	108F			     _ld_back_direction:
+1  1876	108F  80 FF 07			     cmp	     bh	, 7
+1  1877	1092  74 0C			     je		     _ld_bad
+1  1878	1094  80 FB 00			     cmp	     bl	, 0
+1  1879	1097  74 07			     je		     _ld_bad
+1  1880	1099  FE CB			     dec     bl
+1  1881	109B  FE C7			     inc     bh
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 34
+main.asm
+
+
+
+1  1882	109D  EB 06 90			     jmp     _ld_quit
+1  1883	10A0			     _ld_bad:
+1  1884	10A0  C6 06 106Er 00		     mov	     LeftOk , 0
+1  1885	10A5			     _ld_quit:
+1  1886	10A5  58			     pop	     ax
+1  1887	10A6  C3			     ret
+1  1888	10A7			     endp    LeftDirection
+1  1889
+1  1890	10A7  01		     RightOk db	     1
+1  1891				     ;bx-start coordinates
+1  1892	10A8			     RightDirection  proc
+1  1893	10A8  C6 06 10A7r 01		     mov	     RightOk , 1
+1  1894	10AD  50			     push    ax
+1  1895	10AE  A0 2594r			     mov	     al	, color
+1  1896	10B1  3A 06 0828r		     cmp	     al	, procedure_color
+1  1897	10B5  75 11			     jne	     _rd_back_direction
+1  1898	10B7  80 FF 00			     cmp	     bh	, 0
+1  1899	10BA  74 1D			     je		     _rd_bad
+1  1900	10BC  80 FB 07			     cmp	     bl	, 7
+1  1901	10BF  74 18			     je		     _rd_bad
+1  1902	10C1  FE C3			     inc     bl
+1  1903	10C3  FE CF			     dec     bh
+1  1904	10C5  EB 17 90			     jmp	     _rd_quit
+1  1905	10C8			     _rd_back_direction:
+1  1906	10C8  80 FF 07			     cmp	     bh	, 7
+1  1907	10CB  74 0C			     je		     _rd_bad
+1  1908	10CD  80 FB 07			     cmp	     bl	, 7
+1  1909	10D0  74 07			     je		     _rd_bad
+1  1910	10D2  FE C3			     inc     bl
+1  1911	10D4  FE C7			     inc     bh
+1  1912	10D6  EB 06 90			     jmp	     _rd_quit
+1  1913	10D9			     _rd_bad:
+1  1914	10D9  C6 06 10A7r 00		     mov	     RightOk , 0
+1  1915	10DE			     _rd_quit:
+1  1916	10DE  58			     pop	     ax
+1  1917	10DF  C3			     ret
+1  1918	10E0			     endp    RightDirection
+1  1919
+1  1920				     ;bl - column , bh - row , cx - iteration
+1  1921	10E0			     PreventBadMoves proc
+1  1922	10E0  83 F9 04			     cmp     cx	, 4
+1  1923	10E3  74 0D			     je	     _pbm4
+1  1924	10E5  83 F9 03			     cmp     cx	, 3
+1  1925	10E8  74 15			     je	     _pbm3
+1  1926	10EA  83 F9 02			     cmp     cx	, 2
+1  1927	10ED  74 1D			     je	     _pbm2
+1  1928	10EF  EB 28 90			     jmp     _pbm1
+1  1929	10F2			     _pbm4:
+1  1930	10F2  80 FB 01			     cmp     bl	, 1
+1  1931	10F5  7E 2F			     jle     _pbm_bad
+1  1932	10F7  80 FF 06			     cmp     bh	, 6
+1  1933	10FA  7D 2A			     jge     _pbm_bad
+1  1934	10FC  EB 2D 90			     jmp     _pbm_quit
+1  1935	10FF			     _pbm3:
+1  1936	10FF  80 FB 06			     cmp     bl	, 6
+1  1937	1102  7D 22			     jge     _pbm_bad
+1  1938	1104  80 FF 06			     cmp     bh	, 6
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 35
+main.asm
+
+
+
+1  1939	1107  7D 1D			     jge     _pbm_bad
+1  1940	1109  EB 20 90			     jmp     _pbm_quit
+1  1941	110C			     _pbm2:
+1  1942	110C  80 FB 06			     cmp     bl	, 6
+1  1943	110F  7D 15			     jge     _pbm_bad
+1  1944	1111  80 FF 01			     cmp     bh	, 1
+1  1945	1114  7E 10			     jle     _pbm_bad
+1  1946	1116  EB 13 90			     jmp     _pbm_quit
+1  1947	1119			     _pbm1:
+1  1948	1119  80 FB 01			     cmp     bl	, 1
+1  1949	111C  7E 08			     jle     _pbm_bad
+1  1950	111E  80 FF 01			     cmp     bh	, 1
+1  1951	1121  7E 03			     jle     _pbm_bad
+1  1952	1123  EB 06 90			     jmp     _pbm_quit
+1  1953	1126			     _pbm_bad:
+1  1954	1126  C6 06 0FB7r 01		     mov     gcfm_bad ,	1
+1  1955	112B			     _pbm_quit:
+1  1956	112B  C3			     ret
+1  1957	112C			     endp    PreventBadMoves
+1  1958
+   1959					   include lib/deskcopy.asm
+1  1960	112C			     CopyActiveDeskToDesk    proc
+1  1961	112C  80 3E 0D38r 00		     cmp	     EnemiesDestroyed ,	0
+1  1962	1131  74 16			     je		     _cadtd_skip
+1  1963	1133  8A 0E 0D38r		     mov	     cl	, EnemiesDestroyed
+1  1964	1137  80 3E 0828r 01		     cmp	     procedure_color , 1
+1  1965	113C  75 07			     jne	     _cadtd_black
+1  1966	113E  28 0E 0795r		     sub	     black_count , cl
+1  1967	1142  EB 05 90			     jmp	     _cadtd_skip
+1  1968	1145			     _cadtd_black:
+1  1969	1145  28 0E 0796r		     sub	     white_count , cl
+1  1970	1149			     _cadtd_skip:
+1  1971	1149  BE 0682r			     mov	     si	, offset active_desk
+1  1972	114C  8B 3E 06C2r		     mov	     di	, desk_offset
+1  1973	1150  E8 0020			     call    Copy
+1  1974	1153  C3			     ret
+1  1975	1154			     endp    CopyActiveDeskToDesk
+1  1976
+1  1977	1154			     CopyDeskToActiveDesk    proc
+1  1978	1154  8B 36 06C2r		     mov	     si	, desk_offset
+1  1979	1158  BF 0682r			     mov	     di	, offset active_desk
+1  1980	115B  E8 0015			     call    Copy
+1  1981	115E  C3			     ret
+1  1982	115F			     endp    CopyDeskToActiveDesk
+1  1983
+1  1984	115F			     CopyDumpDeskToDeskWhite	     proc
+1  1985	115F  BE 05C2r			     mov	     si	, offset white_desk_dump
+1  1986	1162  BF 0582r			     mov	     di	, offset white_desk
+1  1987	1165  E8 000B			     call    Copy
+1  1988	1168  C3			     ret
+1  1989	1169			     endp    CopyDumpDeskToDeskWhite
+1  1990
+1  1991	1169			     CopyDumpDeskToDeskBlack	     proc
+1  1992	1169  BE 0642r			     mov	     si	, offset black_desk_dump
+1  1993	116C  BF 0602r			     mov	     di	, offset black_desk
+1  1994	116F  E8 0001			     call    Copy
+1  1995	1172  C3			     ret
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 36
+main.asm
+
+
+
+1  1996	1173			     endp    CopyDumpDeskToDeskBlack
+1  1997
+1  1998
+1  1999	1173			     Copy    proc
+1  2000	1173  B9 0040			 mov	     cx	, 64
+1  2001	1176  F3> A4			     rep	     movsb
+1  2002	1178  C3			     ret
+1  2003	1179			     endp    Copy
+1  2004
+1  2005	1179			     Statistic	     proc
+1  2006	1179  50			     push    ax
+1  2007	117A  52			     push    dx
+1  2008	117B  B4 02			     mov	     ah	, 02h
+1  2009	117D  B2 30			     mov	     dl	, 30h
+1  2010	117F  02 16 0795r		     add	     dl	, black_count
+1  2011	1183  CD 21			     int	     21h
+1  2012	1185  B2 30			     mov	     dl	, 30h
+1  2013	1187  02 16 0796r		     add	     dl	, white_count
+1  2014	118B  CD 21			     int	     21h
+1  2015	118D  5A			     pop	     dx
+1  2016	118E  58			     pop	     ax
+1  2017	118F  C3			     ret
+1  2018	1190			     endp	     Statistic
+   2019					   include lib/utils.asm
+1  2020				     ;bh=row,bl=column , out al	- element value
+1  2021	1190			     GetElementFromBoard     proc
+1  2022	1190  53			     push    bx
+1  2023	1191  33 C0			     xor	     ax	, ax
+1  2024	1193  B0 08			     mov	     al	, 8
+1  2025	1195  F6 E7			     mul	     bh
+1  2026	1197  02 C3			     add	     al	, bl
+1  2027	1199  BB 0682r			     mov	     bx	, offset active_desk
+1  2028	119C  03 D8			     add	     bx	, ax
+1  2029	119E  2E: 8A 07			     mov	     al	, byte ptr cs:[bx]
+1  2030	11A1  5B			     pop	     bx
+1  2031	11A2  C3			     ret
+1  2032	11A3			     endp    GetElementFromBoard
+1  2033
+1  2034
+1  2035				     ;bl - column , bh-	row , dl - value to write
+1  2036	11A3			     WriteValueToActiveDesk  proc
+1  2037	11A3  B0 08			 mov al	, 8
+1  2038	11A5  F6 E7			     mul     bh
+1  2039	11A7  02 C3			     add     al	, bl
+1  2040	11A9  BB 0682r			     mov     bx	, offset active_desk
+1  2041	11AC  32 E4			     xor     ah	, ah
+1  2042	11AE  03 D8			     add     bx	, ax
+1  2043	11B0  2E: 88 17			     mov     cs:[bx] , dl
+1  2044	11B3  C3			     ret
+1  2045	11B4			     endp    WriteValueToActiveDesk
+1  2046
+1  2047				     ;bh = row,	bl = column , out cx , dx
+1  2048	11B4			     GetCoordinates  proc
+1  2049	11B4  B0 28			     mov     al	, 40
+1  2050	11B6  F6 E3			     mul     bl
+1  2051	11B8  8B C8			     mov     cx	, ax
+1  2052	11BA  B0 28			     mov     al	, 40
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 37
+main.asm
+
+
+
+1  2053	11BC  F6 E7			     mul     bh
+1  2054	11BE  8B D0			     mov     dx	, ax
+1  2055	11C0  C3			     ret
+1  2056	11C1			     endp    GetCoordinates
+1  2057
+   2058					       include lib/serial.asm
+1  2059
+1  2060	11C1			     Ser_Ini proc near
+1  2061	11C1  50			     push ax							     ; сохpанить pегистpы
+1  2062	11C2  52			     push dx
+1  2063	11C3  53				     push bx
+1  2064	11C4  06				     push es
+1  2065	11C5  E4 21					     in	al, 21h					     ; IMR 1-го	контpолеpа  +
+   2066				     пpеpываний
+1  2067	11C7  0C 10					     or	al, 10h					     ; запpетить пpеpывание +
+   2068				     IRQ4 от COM1
+1  2069	11C9  E6 21					     out 21h, al
+1  2070	11CB  B0 0C					     mov al, 0Ch
+1  2071	11CD  B4 35					     mov ah, 35h
+1  2072	11CF  CD 21					     int 21h					     ; взять вектоp Int	0Ch +
+   2073				     в es:bx
+1  2074	11D1  89 1E 1624r				     mov Ser_ip, bx			     ; и сохpанить его
+1  2075	11D5  8C 06 1626r				     mov Ser_cs, es
+1  2076	11D9  B0 0C					     mov al, 0Ch
+1  2077	11DB  BA 1673r					     mov dx, offset Ser_int
+1  2078	11DE  1E					     push ds
+1  2079	11DF  8C CB						     mov bx, cs
+1  2080	11E1  8E DB						     mov ds, bx
+1  2081	11E3  B4 25						     mov ah, 25h
+1  2082	11E5  CD 21						     int 21h				     ; установить Int 0Ch = +
+   2083				     ds:dx
+1  2084	11E7  1F					     pop ds
+1  2085	11E8  07				     pop es
+1  2086	11E9  5B				     pop bx
+1  2087	11EA  FA				     cli							     ; запpетить    +
+   2088				     пpеpывания
+1  2089	11EB  E4 21				     in	al, 21h						     ; IMR 1-го	контpоллеpа +
+   2090				     пpеpываний
+1  2091	11ED  24 EF				     and al, not 10h
+1  2092	11EF  E6 21				     out 21h, al					     ; pазpешить пpеpывания +
+   2093				     от	COM1
+1  2094	11F1  BA 03FB				     mov dx, 3FBh				     ; pегистp упpавления линией
+1  2095	11F4  EC				     in	al, dx
+1  2096	11F5  0C 80				     or	al, 80h						     ; установить бит DLAB
+1  2097	11F7  EE				     out dx, al
+1  2098	11F8  BA 03F8				     mov dx, 3F8h
+1  2099	11FB  B0 60				     mov al, 60h
+1  2100	11FD  EE				     out dx, al						     ; младший байт для	    +
+   2101				     скоpости 1200 бод
+1  2102	11FE  42				     inc dx
+1  2103	11FF  B0 00				     mov al, 0
+1  2104	1201  EE				     out dx, al						     ; стаpший байт скоpости
+1  2105	1202  BA 03FB				     mov dx, 3FBh				     ; pегистp упpавления линией
+1  2106	1205  B0 03				     mov al, 00000011b				     ; 8 бит, 2	стоп-бита, без	    +
+   2107				     четности
+1  2108	1207  EE				     out dx, al
+1  2109	1208  BA 03F9				     mov dx, 3F9h				     ; pегистp pазpешения пpеpываний
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 38
+main.asm
+
+
+
+1  2110	120B  B0 01				     mov al, 1						     ; pазpешить пpеpывания +
+   2111				     по	пpиему
+1  2112	120D  EE				     out dx, al
+1  2113	120E  90				     nop							     ; и чуть-чуть  +
+   2114				     подождать
+1  2115	120F  90				     nop
+1  2116	1210  BA 03FC				     mov dx, 3FCh				     ; pегистp упpавления модемом
+1  2117	1213  B0 0B				     mov al, 00001011b				     ; установить DTR, RTS и OUT2
+1  2118	1215  EE				     out dx, al
+1  2119	1216  FB				     sti							     ; pазpешить    +
+   2120				     пpеpывания
+1  2121	1217  BA 03F8				     mov dx, 3F8h				     ; pегистp данных
+1  2122	121A  EC				     in	al, dx						     ; сбpосить	буфеp пpиема
+1  2123	121B  5A			     pop dx
+1  2124	121C  58			     pop ax
+1  2125	121D  C3			     ret
+1  2126	121E			     Ser_Ini endp
+1  2127
+1  2128	121E  0402*(00)		     Source db 1026 dup(0)				     ; буфеp пpиема символов
+1  2129	1620  121Er		     Src_ptr dw	Source						     ; указатель позиции в буфеpе
+1  2130	1622  0000		     Count dw 0								     ; количество символов в+
+   2131				     буфеpе
+1  2132	1624  0000		     Ser_ip dw 0							     ; стаpый адpес Int	0Ch
+1  2133	1626  0000		     Ser_cs dw 0
+1  2134	1628  0000		     Save_ds dw	0						     ; служебные пеpеменные
+1  2135	162A  00		     Int_sts db	0
+1  2136	162B  00		     Overrun db	0
+1  2137
+1  2138	162C			     Ser_Rst proc near
+1  2139	162C  50			     push ax							     ; сохpанить pегистpы
+1  2140	162D  52			     push dx
+1  2141	162E  1E			     push ds
+1  2142
+1  2143	162F				     Wait_Free:
+1  2144	162F  8C C8				     mov ax, cs
+1  2145	1631  8E D8				     mov ds, ax
+1  2146	1633  BA 03FD				     mov dx, 3FDh				     ; pегистp состояния линии
+1  2147	1636  EC				     in	al, dx
+1  2148	1637  EB 00				     jmp short $+2				     ; коpоткая	задеpжка
+1  2149	1639  A8 60				     test al, 60h				     ; пеpедача	окончена?
+1  2150	163B  74 F2				     jz	Wait_Free				     ; ждем, если нет
+1  2151	163D  BA 03F9				     mov dx, 3F9h				     ; pегистp pазpешения пpеpываний
+1  2152	1640  B0 00				     mov al, 0						     ; запpетить пpеpывания
+1  2153	1642  EE				     out dx, al
+1  2154	1643  EB 00				     jmp short $+2				     ; еще подождем...
+1  2155	1645  EB 00				     jmp short $+2
+1  2156	1647  BA 03FC				     mov dx, 3FCh				     ; pегистp упpавления модемом
+1  2157	164A  B0 03				     mov al, 00000011b				     ; активиpовать DTR	и RTS
+1  2158	164C  EE				     out dx, al
+1  2159	164D  EB 00				     jmp short $+2
+1  2160	164F  EB 00				     jmp short $+2
+1  2161	1651  53				     push bx
+1  2162	1652  B0 0C					     mov al, 0Ch
+1  2163	1654  8B 16 1624r				     mov dx, Ser_ip
+1  2164	1658  1E					     push ds
+1  2165	1659  8B 1E 1626r					     mov bx, Ser_cs
+1  2166	165D  8E DB						     mov ds, bx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 39
+main.asm
+
+
+
+1  2167	165F  B4 25						     mov ah, 25h
+1  2168	1661  CD 21						     int 21h				     ; восстановить вектоp  +
+   2169				     Int 0Ch
+1  2170	1663  1F					     pop ds
+1  2171	1664  5B				     pop bx
+1  2172	1665  FA				     cli							     ; запpет	    +
+   2173				     пpеpываний
+1  2174	1666  E4 21				     in	al, 21h						     ; читать маску	    +
+   2175				     пpеpываний
+1  2176	1668  EB 00				     jmp short $+2
+1  2177	166A  0C 10				     or	al, 10h						     ; запpетить IRQ4
+1  2178	166C  E6 21				     out 21h, al
+1  2179	166E  FB				     sti							     ; pазpешение   +
+   2180				     пpеpываний
+1  2181	166F  1F			     pop ds
+1  2182	1670  5A			     pop dx
+1  2183	1671  58			     pop ax
+1  2184	1672  C3			     ret
+1  2185	1673			     Ser_Rst endp
+1  2186
+1  2187	1673			     Ser_Int proc far
+1  2188	1673  50			     push ax
+1  2189	1674  52			     push dx
+1  2190	1675  1E			     push ds
+1  2191	1676  8C C8				     mov ax, cs
+1  2192	1678  8E D8				     mov ds, ax
+1  2193	167A  BA 03FA				     mov dx, 3FAh				     ; pегистp идентификации	    +
+   2194				     пpеpываний
+1  2195	167D  EC				     in	al, dx
+1  2196	167E  A2 162Ar				     mov Int_Sts, al				     ; сохpаним	его содеpжимое
+1  2197	1681  A8 01				     test al, 1						     ; есть отложенные	    +
+   2198				     пpеpывания?
+1  2199	1683  74 14				     jz	Is_Int						     ; да
+1  2200	1685  8F 06 1628r		     pop Save_ds						     ; нет, пеpедаем	    +
+   2201				     упpавление
+1  2202	1689  5A			     pop dx							     ; стаpому обpаботчику  +
+   2203				     Int 0Ch
+1  2204	168A  58			     pop ax
+1  2205	168B  FF 36 1626r		     push Ser_cs
+1  2206	168F  FF 36 1624r		     push Ser_ip
+1  2207	1693  FF 36 1628r			     push Save_ds
+1  2208	1697  1F				     pop  ds
+1  2209	1698  CB			     ret								     ; длинный	    +
+   2210				     пеpеход
+1  2211
+1  2212	1699				     Is_Int:
+1  2213	1699  B0 64				     mov al, 64h					     ; послать EOI для IRQ4
+1  2214	169B  E6 20				     out 20h, al					     ; в 1-й контpоллеp	    +
+   2215				     пpеpываний
+1  2216	169D  F6 06 162Ar 04			     test Int_Sts, 4				     ; пpеpывание по пpиему?
+1  2217	16A2  75 04				     jnz Read_Char				     ; да
+1  2218	16A4				     No_Char:
+1  2219	16A4  FB				     sti							     ; нет,	    +
+   2220				     pазpешить пpеpывания
+1  2221	16A5  EB 4E 90				     jmp Int_Ret					     ; и закончить обpаботку+
+   2222				     Int 0Ch
+1  2223
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 40
+main.asm
+
+
+
+1  2224	16A8				     Read_Char:
+1  2225	16A8  BA 03FD				     mov dx, 3FDh				     ; pегистp состояния линии
+1  2226	16AB  EC				     in	al, dx
+1  2227	16AC  24 02				     and al, 2
+1  2228	16AE  A2 162Br				     mov Overrun, al				     ; ovvrrun<>0, если	была потеpя +
+   2229				     символа
+1  2230	16B1  BA 03F8				     mov dx, 3F8h				     ; pегистp данных
+1  2231	16B4  EC				     in	al, dx						     ; вводим символ
+1  2232	16B5  0A C0				     or	al, al						     ; если пpинят нуль,
+1  2233	16B7  74 EB				     jz	No_Char						     ; то игноpиpуем его
+1  2234	16B9  53				     push bx
+1  2235	16BA  8A 26 162Br				     mov ah, Overrun
+1  2236	16BE  0A E4					     or	ah, ah					     ; пpедыдущий символ    +
+   2237				     потеpян?
+1  2238	16C0  74 04					     jz	Save_Char			     ; нет
+1  2239	16C2  8A E0					     mov ah, al					     ; да,
+1  2240	16C4  B0 07					     mov al, 7					     ; заменяем	его на	    +
+   2241				     звонок (07h)
+1  2242	16C6					     Save_Char:
+1  2243	16C6  8B 1E 1620r				     mov bx, Src_ptr			     ; заносим символ в	буфеp
+1  2244	16CA  88 07					     mov [bx], al
+1  2245	16CC  FF 06 1620r				     inc Src_ptr				     ; и обновляем счетчики
+1  2246	16D0  43					     inc bx
+1  2247	16D1  81 FB 161Er				     cmp bx, offset Src_ptr-2	     ; если конец буфеpа
+1  2248	16D5  72 06					     jb	Ser_Int_1
+1  2249	16D7  C7 06 1620r 121Er				     mov Src_ptr, offset Source	     ; то "зацикливаем"	на начало
+1  2250	16DD					     Ser_Int_1:
+1  2251	16DD  81 3E 1622r 0400				     cmp Count,	1024		     ; буфеp полон?
+1  2252	16E3  73 04					     jae Ser_Int_2			     ; да
+1  2253	16E5  FF 06 1622r				     inc Count					     ; нет, учесть символ
+1  2254	16E9					     Ser_Int_2:
+1  2255	16E9  0A E4					     or	ah, ah					     ; если была потеpя	    +
+   2256				     символа
+1  2257	16EB  74 06					     jz	Ser_Int_3
+1  2258	16ED  8A C4					     mov al, ah					     ; то занести в буфеp   +
+   2259				     сам символ
+1  2260	16EF  32 E4					     xor ah, ah
+1  2261	16F1  EB D3					     jmp short Save_Char
+1  2262	16F3				     Ser_Int_3:
+1  2263	16F3  5B				     pop bx
+1  2264	16F4  FB				     sti							     ; pазpешить    +
+   2265				     пpеpывания
+1  2266	16F5			     Int_Ret:
+1  2267	16F5  1F			     pop  ds
+1  2268	16F6  5A			     pop  dx
+1  2269	16F7  58			     pop  ax
+1  2270	16F8  CF			     iret
+1  2271	16F9			     Ser_Int endp
+1  2272
+1  2273	16F9			     Out_Chr proc near ; (al)
+1  2274	16F9  50			     push ax
+1  2275	16FA  51			     push cx
+1  2276	16FB  52			     push dx
+1  2277	16FC  8A E0				     mov ah, al
+1  2278	16FE  2B C9				     sub cx, cx
+1  2279
+1  2280	1700				     Wait_Line:
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 41
+main.asm
+
+
+
+1  2281	1700  BA 03FD				     mov dx, 3FDh				     ; pегистp состояния линии
+1  2282	1703  EC				     in	al, dx
+1  2283	1704  A8 20				     test al, 20h				     ; стык готов к пеpедаче?
+1  2284	1706  75 0B				     jnz Output						     ; да
+1  2285	1708  EB 00				     jmp short $+2
+1  2286	170A  EB 00				     jmp short $+2
+1  2287	170C  E2 F2				     loop Wait_Line				     ; нет, ждем
+1  2288	170E  5A			     pop dx
+1  2289	170F  59			     pop cx
+1  2290	1710  58			     pop ax
+1  2291	1711  F9			     stc								     ; нет	    +
+   2292				     готовности	поpта
+1  2293	1712  C3			     ret								     ; CF = is_error+
+   2294				     = 1
+1  2295
+1  2296	1713				     Output:
+1  2297	1713  8A C4				     mov al, ah
+1  2298	1715  BA 03F8				     mov dx, 3F8h				     ; pегистp данных
+1  2299	1718  EB 00				     jmp short $+2
+1  2300	171A  EE				     out dx, al						     ; вывести символ
+1  2301	171B  5A			     pop dx
+1  2302	171C  59			     pop cx
+1  2303	171D  58			     pop ax
+1  2304	171E  F8			     clc								     ; ноpмальный   +
+   2305				     возвpат
+1  2306	171F  C3			     ret								     ; CF = is_error+
+   2307				     = 0
+1  2308	1720			     Out_Chr endp
+1  2309
+1  2310	1720			     Get_Chr proc near
+1  2311	1720  83 3E 1622r 00		     cmp Count,	0					     ; буфеp пуст?
+1  2312	1725  75 02			     jne loc_1729					     ; нет
+1  2313	1727  F9			     stc								     ; да, возвpат  +
+   2314				     по	ошибке
+1  2315	1728  C3			     ret								     ; CF =	    +
+   2316				     buffer_is_empty = 1
+1  2317	1729			     loc_1729:
+1  2318	1729  56			     push si
+1  2319	172A  FA				     cli							     ; запpетим	    +
+   2320				     пpеpывания
+1  2321	172B  8B 36 1620r			     mov si, Src_ptr
+1  2322	172F  2B 36 1622r			     sub si, Count
+1  2323	1733  81 FE 121Er			     cmp si, offset Source
+1  2324	1737  73 04				     jae loc_1730
+1  2325	1739  81 C6 0400			     add si, 1024
+1  2326	173D				     loc_1730:
+1  2327	173D  8A 04				     mov al, [si]				     ; выбеpем символ
+1  2328	173F  FF 0E 1622r			     dec Count						     ; и уменьшим счетчик
+1  2329	1743  FB				     sti							     ; pазpешение   +
+   2330				     пpеpываний
+1  2331	1744  5E			     pop si
+1  2332	1745  F8			     clc								     ; и ноpмальный +
+   2333				     возвpат
+1  2334	1746  C3			     ret								     ; al = symbol, +
+   2335				     CF	= buffer_is_empty = 0
+1  2336	1747			     Get_Chr endp
+1  2337
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 42
+main.asm
+
+
+
+1  2338				     ; Buf_Size	 equ  1024	     ; pазмеp буфеpа
+1  2339				     ; Source	 db   Buf_Size+2 dup (0) ; буфеp пpиема	символов
+1  2340				     ; Src_ptr	 dw   Source	     ; указатель позиции в буфеpе
+1  2341				     ; Count	 dw   0		     ; количество символов в буфеpе
+1  2342				     ; Ser_ip	 dw   0		     ; стаpый адpес Int	0Ch
+1  2343				     ; Ser_cs	 dw   0
+1  2344				     ; Save_ds	 dw   0		     ; служебные пеpеменные
+1  2345				     ; Int_sts	 db   0
+1  2346				     ; Overrun	 db   0
+1  2347
+1  2348
+1  2349				     ; proc Ser_Ini near
+1  2350					     ; push  ax	       ; сохpанить pегистpы
+1  2351					     ; push  dx
+1  2352					     ; push  bx
+1  2353					     ; push  es
+1  2354					     ; in    al, 21h	; IMR 1-го контpолеpа пpеpываний
+1  2355					     ; or    al, 8h    ; запpетить пpеpывание IRQ4 от COM1
+1  2356					     ; out   21h, al
+1  2357					     ; mov   al, 0Bh
+1  2358					     ; mov   ah, 35h
+1  2359					     ; int   21h       ; взять вектоp Int 0Ch в	es:bx
+1  2360					     ; mov   Ser_ip, bx	; и сохpанить его
+1  2361					     ; mov   Ser_cs, es
+1  2362					     ; mov	     al, 0Bh
+1  2363					     ; mov   dx, offset	Ser_int
+1  2364					     ; push  ds
+1  2365					     ; mov   bx, cs
+1  2366					     ; mov   ds, bx
+1  2367					     ; mov   ah, 25h
+1  2368					     ; int   21h       ; установить Int	0Ch = ds:dx
+1  2369					     ; pop   ds
+1  2370					     ; pop   es
+1  2371					     ; pop	     bx
+1  2372					     ; cli	      ;	запpетить пpеpывания
+1  2373					     ; in    al, 21h	; IMR 1-го контpоллеpа пpеpываний
+1  2374					     ; and   al, not 8h
+1  2375					     ; out   21h, al	; pазpешить пpеpывания от COM1
+1  2376					     ; mov   dx, 2FBh	; pегистp упpавления линией
+1  2377					     ; in    al, dx
+1  2378					     ; or    al, 80h	; установить бит DLAB
+1  2379					     ; out   dx, al
+1  2380					     ; mov   dx, 2F8h
+1  2381					     ; mov   al, 60h
+1  2382					     ; out   dx, al	; младший байт для скоpости 1200 бод
+1  2383					     ; inc   dx
+1  2384					     ; mov   al, 0
+1  2385					     ; out   dx, al	; стаpший байт скоpости
+1  2386					     ; mov   dx, 2FBh	; pегистp упpавления линией
+1  2387					     ; mov   al, 00000011b ; 8 бит, 2 стоп-бита, без четности
+1  2388					     ; out   dx, al
+1  2389					     ; mov   dx, 2F9h	; pегистp pазpешения пpеpываний
+1  2390					     ; mov   al, 1	; pазpешить пpеpывания по пpиему
+1  2391					     ; out   dx, al
+1  2392					     ; nop	      ;	и чуть-чуть подождать
+1  2393					     ; nop
+1  2394					     ; nop
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 43
+main.asm
+
+
+
+1  2395					     ; nop
+1  2396					     ; mov   dx, 2FCh	; pегистp упpавления модемом
+1  2397					     ; mov   al, 00001011b ; установить	DTR, RTS и OUT2
+1  2398					     ; out   dx, al
+1  2399					     ; sti	      ;	pазpешить пpеpывания
+1  2400					     ; mov   dx, 2F8h	; pегистp данных
+1  2401					     ; in    al, dx	; сбpосить буфеp пpиема
+1  2402					     ; pop   dx
+1  2403					     ; pop   ax
+1  2404					     ; ret
+1  2405				     ; endp Ser_Ini
+1  2406
+1  2407				     ; proc Ser_Rst near
+1  2408					     ; push  ax	       ; сохpанить pегистpы
+1  2409					     ; push  dx
+1  2410				     ; Wait_Free:
+1  2411					     ; mov   dx, 2FDh	; pегистp состояния линии
+1  2412					     ; in    al,dx
+1  2413					     ; jmp   short $+2 ; коpоткая задеpжка
+1  2414					     ; test  al, 60h	; пеpедача окончена?
+1  2415					     ; jz    Wait_Free ; ждем, если нет
+1  2416					     ; mov   dx, 2F9h	; pегистp pазpешения пpеpываний
+1  2417					     ; mov   al, 0	; запpетить пpеpывания
+1  2418					     ; out   dx,al
+1  2419					     ; jmp   short $+2 ; еще подождем...
+1  2420					     ; jmp   short $+2
+1  2421					     ; mov   dx, 2FCh	; pегистp упpавления модемом
+1  2422					     ; mov   al, 00000011b ; активиpовать DTR и	RTS
+1  2423					     ; out   dx, al
+1  2424					     ; jmp   short $+2
+1  2425					     ; jmp   short $+2
+1  2426					     ; push  bx
+1  2427					     ; mov   al, 0Bh
+1  2428					     ; mov   dx, Ser_ip
+1  2429					     ; push  ds
+1  2430					     ; mov   bx, Ser_cs
+1  2431					     ; mov   ds, bx
+1  2432					     ; mov   ah, 25h
+1  2433					     ; int   21h       ; восстановить вектоp Int 0Ch
+1  2434					     ; pop   ds
+1  2435					     ; pop   bx
+1  2436					     ; cli	      ;	запpет пpеpываний
+1  2437					     ; in    al, 21h	; читать маску пpеpываний
+1  2438					     ; jmp   short $+2
+1  2439					     ; or    al, 8h    ; запpетить IRQ4	bxlo 16h
+1  2440					     ; out   21h, al
+1  2441					     ; sti	      ;	pазpешение пpеpываний
+1  2442					     ; pop  dx
+1  2443					     ; pop  ax
+1  2444					     ; ret
+1  2445				     ; endp Ser_Rst
+1  2446
+1  2447				     ; proc Ser_Int far
+1  2448					     ; push  ax
+1  2449					     ; push  dx
+1  2450					     ; push  ds
+1  2451					     ; mov   ax, cs
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 44
+main.asm
+
+
+
+1  2452					     ; mov	     ds, ax
+1  2453					     ; mov   dx, 2FAh	; pегистp идентификации	пpеpываний
+1  2454					     ; in    al, dx
+1  2455					     ; mov   Int_Sts, al; сохpаним его содеpжимое
+1  2456					     ; test  al, 1	; есть отложенные пpеpывания?
+1  2457					     ; jz    Is_Int    ; да
+1  2458					     ; pop   Save_ds   ; нет, пеpедаем упpавление
+1  2459					     ; pop   dx	       ; стаpому обpаботчику Int 0Ch
+1  2460					     ; pop   ax
+1  2461					     ; push  Ser_cs
+1  2462					     ; push  Ser_ip
+1  2463					     ; push  Save_ds
+1  2464					     ; pop   ds
+1  2465					     ; ret	      ;	длинный	пеpеход
+1  2466				     ; Is_Int:
+1  2467					     ; mov   al, 63h	; послать EOI для IRQ4 ; bxlo 64h
+1  2468					     ; out   20h, al	; в 1-й	контpоллеp пpеpываний
+1  2469					     ; test  Int_Sts, 4	; пpеpывание по	пpиему?
+1  2470					     ; jnz   Read_Char ; да
+1  2471				     ; No_Char:
+1  2472					     ; sti	      ;	нет, pазpешить пpеpывания
+1  2473					     ; jmp   Int_Ret   ; и закончить обpаботку Int 0Ch
+1  2474				     ; Read_Char:
+1  2475					     ; mov   dx, 2FDh	; pегистp состояния линии
+1  2476					     ; in    al, dx
+1  2477					     ; and   al, 2
+1  2478					     ; mov   Overrun, al; ovvrrun<>0, если была	потеpя символа
+1  2479					     ; mov   dx, 2F8h	; pегистp данных
+1  2480					     ; in    al, dx	; вводим символ
+1  2481					     ; or    al, al	; если пpинят нуль,
+1  2482					     ; jz    No_Char   ; то игноpиpуем его
+1  2483					     ; push  bx
+1  2484					     ; mov   ah, Overrun
+1  2485					     ; or    ah, ah	; пpедыдущий символ потеpян?
+1  2486					     ; jz    Save_Char ; нет
+1  2487					     ; mov   ah, al	; да,
+1  2488					     ; mov   al, 7	; заменяем его на звонок (07h)
+1  2489				     ; Save_Char:
+1  2490					     ; mov   bx, Src_ptr; заносим символ в буфеp
+1  2491					     ; mov   [bx], al
+1  2492					     ; inc   Src_ptr   ; и обновляем счетчики
+1  2493					     ; inc   bx
+1  2494					     ; cmp   bx, offset	Src_ptr-2 ; если конец буфеpа
+1  2495					     ; jb    Ser_Int_1
+1  2496					     ; mov   Src_ptr, offset Source ; то "зацикливаем" на начало
+1  2497				     ; Ser_Int_1:
+1  2498					     ; cmp   Count, Buf_Size ; буфеp полон?
+1  2499					     ; jae   Ser_Int_2 ; да
+1  2500					     ; inc   Count     ; нет, учесть символ
+1  2501				     ; Ser_Int_2:
+1  2502					     ; or    ah, ah	; если была потеpя символа
+1  2503					     ; jz    Ser_Int_3
+1  2504					     ; mov   al, ah	; то занести в буфеp сам символ
+1  2505					     ; xor   ah, ah
+1  2506					     ; jmp   short Save_Char
+1  2507				     ; Ser_Int_3:
+1  2508					     ; pop   bx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 45
+main.asm
+
+
+
+1  2509					     ; sti	      ;	pазpешить пpеpывания
+1  2510				     ; Int_Ret:
+1  2511					     ; pop   ds
+1  2512					     ; pop   dx
+1  2513					     ; pop   ax
+1  2514					     ; iret
+1  2515				     ; endp Ser_Int
+1  2516
+1  2517				     ; proc Out_Chr near
+1  2518					     ; push  ax
+1  2519					     ; push  cx
+1  2520					     ; push  dx
+1  2521					     ; mov   ah, al
+1  2522					     ; sub	     cx, cx
+1  2523				     ; Wait_Line:
+1  2524					     ; mov   dx, 2FDh	; pегистp состояния линии
+1  2525					     ; in    al, dx
+1  2526					     ; test  al,20h    ; стык готов к пеpедаче?
+1  2527					     ; jnz   output    ; да
+1  2528					     ; jmp   short $+2
+1  2529					     ; jmp   short $+2
+1  2530					     ; loop  Wait_Line ; нет, ждем
+1  2531					     ; pop   dx
+1  2532					     ; pop   cx
+1  2533					     ; pop   ax
+1  2534					     ; stc	      ;	нет готовности поpта
+1  2535					     ; ret
+1  2536				     ; output:
+1  2537					     ; mov   al, ah
+1  2538					     ; mov   dx, 2F8h	; pегистp данных
+1  2539					     ; jmp   short $+2
+1  2540					     ; out   dx, al	; вывести символ
+1  2541					     ; pop   dx
+1  2542					     ; pop   cx
+1  2543					     ; pop   ax
+1  2544					     ; clc	      ;	ноpмальный возвpат
+1  2545					     ; ret
+1  2546				     ; endp Out_Chr
+1  2547
+1  2548				     ; proc Get_Chr near
+1  2549					     ; cmp   Count, 0	; буфеp	пуст?
+1  2550					     ; jne   loc_1729  ; нет
+1  2551					     ; stc	      ;	да, возвpат по ошибке
+1  2552					     ; ret
+1  2553				     ; loc_1729:
+1  2554					     ; push  si
+1  2555					     ; cli	      ;	запpетим пpеpывания
+1  2556					     ; mov   si, Src_ptr
+1  2557					     ; sub   si, Count
+1  2558					     ; cmp   si, offset	Source
+1  2559					     ; jae   loc_1730
+1  2560					     ; add   si, Buf_Size
+1  2561				     ; loc_1730:
+1  2562					     ; mov   al, [si]	; выбеpем символ
+1  2563					     ; dec   Count     ; и уменьшим счетчик
+1  2564					     ; sti	      ;	pазpешение пpеpываний
+1  2565					     ; pop   si
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 46
+main.asm
+
+
+
+1  2566					     ; clc	      ;	и ноpмальный возвpат
+1  2567					     ; ret
+1  2568				     ; endp Get_Chr
+   2569					       include lib/timer.asm
+1  2570	1747  00		     ticks_count    db 0
+1  2571	1748  00		     disconnect_timer db     0
+1  2572
+1  2573	1749			     SetTimerHandler proc
+1  2574	1749  06			     push    es
+1  2575	174A  B8 3508			     mov	     ax	, 3508h
+1  2576	174D  CD 21			     int	     21h
+1  2577	174F  89 1E 17AFr		     mov     word ptr [old_int_08h] , bx
+1  2578	1753  8C 06 17B1r		     mov     word ptr [old_int_08h+2] ,	es
+1  2579	1757  B8 2508			     mov	     ax	, 2508h
+1  2580	175A  BA 1774r			     mov	     dx	, offset timer_vector
+1  2581	175D  CD 21			     int	     21h
+1  2582	175F  07			     pop	     es
+1  2583	1760  C3			     ret
+1  2584	1761			     endp    SetTimerHandler
+1  2585
+1  2586	1761			     DisableTimerHandler     proc
+1  2587	1761  06			     push    es
+1  2588	1762  8B 1E 17AFr		     mov	     bx	, word ptr [old_int_08h]
+1  2589	1766  8B 0E 17B1r		     mov	     cx	, word ptr [old_int_08h+2]
+1  2590	176A  51			     push    cx
+1  2591	176B  07			     pop	     es
+1  2592	176C  B8 2508			     mov	     ax	, 2508h
+1  2593	176F  CD 21			     int	     21h
+1  2594	1771  07			     pop	     es
+1  2595	1772  C3			     ret
+1  2596	1773			     endp    DisableTimerHandler
+1  2597
+1  2598	1773  00		     GameStart	     db	     0
+1  2599
+1  2600	1774			     timer_vector:
+1  2601	1774  50			     push	     ax
+1  2602	1775  80 3E 1773r 00		     cmp	     GameStart , 0
+1  2603	177A  74 14			     je		     _t_main
+1  2604	177C  FE 06 1748r		     inc	     disconnect_timer
+1  2605	1780  80 3E 1748r 5A		     cmp	     disconnect_timer ,	90
+1  2606	1785  75 09			     jne	     _t_main
+1  2607	1787  C6 06 2598r 01 90		     mov	     gameEnd , 1
+1  2608	178D  EB 1E 90			     jmp	     _t_alert_next_time
+1  2609	1790			     _t_main:
+1  2610	1790  80 3E 1747r 12		     cmp	     ticks_count , 18
+1  2611	1795  75 12			     jne	     _t_con
+1  2612	1797  2E: 80 3E	1BB7r 01	     cmp	     cs:isFree , 1
+1  2613	179D  75 0E			     jne	     _t_alert_next_time
+1  2614	179F  B0 41			     mov	     al	, 41h
+1  2615	17A1  E8 0415			     call	     WriteInOutBuff
+1  2616	17A4  C6 06 1747r 00		     mov	     ticks_count , 0
+1  2617	17A9			     _t_con:
+1  2618	17A9  FE 06 1747r		     inc	     ticks_count
+1  2619	17AD			     _t_alert_next_time:
+1  2620	17AD  58			     pop	     ax
+1  2621	17AE  EA			 db 0eah
+1  2622	17AF  ????????			 old_int_08h dd	     ?
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 47
+main.asm
+
+
+
+   2623					       include lib/outbuff.asm
+1  2624	17B3  0400*(00)		     out_buff	     db	     1024    dup (0)
+1  2625	1BB3  0000		     head_buff	     dw	     0
+1  2626	1BB5  0000		     tail_buff	     dw	     0
+1  2627	1BB7  01		     isFree	     db	     1
+1  2628	1BB8  00		     OutCount	     db	     0
+1  2629
+1  2630				     ; al - parameter to write
+1  2631	1BB9			     WriteInOutBuff	     proc
+1  2632	1BB9  53			     push    bx
+1  2633	1BBA  2E: 81 3E	1BB3r 0400	     cmp	     cs:head_buff , 1024
+1  2634	1BC1  75 06			     jne	     _wiob_skip
+1  2635	1BC3  C7 06 1BB3r 0000		     mov	     head_buff , 0
+1  2636	1BC9			     _wiob_skip:
+1  2637	1BC9  BB 17B3r			     mov	     bx	, offset cs:out_buff
+1  2638	1BCC  2E: 03 1E	1BB3r		     add	     bx	, cs:head_buff
+1  2639	1BD1  2E: 88 07			     mov	     cs:[bx] , al
+1  2640	1BD4  2E: FF 06	1BB3r		     inc	     cs:head_buff
+1  2641	1BD9  2E: FE 06	1BB8r		     inc	     cs:OutCount
+1  2642	1BDE  5B			     pop	     bx
+1  2643	1BDF  C3			     ret
+1  2644	1BE0			     endp    WriteInOutBuff
+1  2645
+1  2646				     ;al - read	value
+1  2647	1BE0			     ReadFromOutBuff	     proc
+1  2648	1BE0  56			     push    si
+1  2649	1BE1  81 3E 1BB5r 0400		     cmp	     tail_buff , 1024
+1  2650	1BE7  75 06			     jne	     _rfob_skip
+1  2651	1BE9  C7 06 1BB5r 0000		     mov	     tail_buff , 0
+1  2652	1BEF			     _rfob_skip:
+1  2653	1BEF  BE 17B3r			     mov	     si	, offset out_buff
+1  2654	1BF2  03 36 1BB5r		     add	     si	, tail_buff
+1  2655	1BF6  AC			     lodsb
+1  2656	1BF7  FF 06 1BB5r		     inc	     tail_buff
+1  2657	1BFB  FE 0E 1BB8r		     dec	     OutCount
+1  2658	1BFF  5E			     pop	     si
+1  2659	1C00  C3			     ret
+1  2660	1C01			     endp    ReadFromOutBuff
+   2661					       include lib/commands/common.asm
+1  2662	1C01			     HandleCommands  proc
+1  2663	1C01  C6 06 1748r 00		     mov	     disconnect_timer ,	0
+1  2664	1C06  3C 41			     cmp	     al	, 41h
+1  2665	1C08  75 06			     jne	     _hc_B
+1  2666	1C0A  E8 003A			     call    HandleA
+1  2667	1C0D  EB 37 90			     jmp	     _hc_quit
+1  2668	1C10			     _hc_B:
+1  2669	1C10  3C 42			     cmp	     al	, 42h
+1  2670	1C12  75 06			     jne	     _hc_C
+1  2671	1C14  E8 004B			     call    HandleB
+1  2672	1C17  EB 2D 90			     jmp	     _hc_quit
+1  2673	1C1A			     _hc_C:
+1  2674	1C1A  80 3E 1C60r 01		     cmp	     ColorSelected  , 1
+1  2675	1C1F  75 14			     jne	     _hc_E
+1  2676	1C21  3C 43			     cmp	     al	, 43h
+1  2677	1C23  75 06			     jne	     _hc_D
+1  2678	1C25  E8 011A			     call    HandleC
+1  2679	1C28  EB 1C 90			     jmp	     _hc_quit
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 48
+main.asm
+
+
+
+1  2680	1C2B			      _hc_D:
+1  2681	1C2B  3C 44			     cmp	     al	, 44h
+1  2682	1C2D  75 06			     jne	     _hc_E
+1  2683	1C2F  E8 02F4			     call    HandleD
+1  2684	1C32  EB 12 90			     jmp	     _hc_quit
+1  2685	1C35			      _hc_E:
+1  2686	1C35  3C 45			     cmp	     al	, 45h
+1  2687				     ;	     jne	     _hc_N
+1  2688	1C37  75 06			     jne	     _hc_G
+1  2689	1C39  E8 0364			     call    HandleE
+1  2690	1C3C  EB 08 90			     jmp	     _hc_quit
+1  2691				     ;_hc_N:
+1  2692				     ;	     cmp	     al	, 4Eh
+1  2693				     ;	     jne	     _hc_G
+1  2694				     ;	     call    HandleN
+1  2695				     ;	     jmp	     _hc_quit
+1  2696	1C3F			     _hc_G:
+1  2697	1C3F  3C 47			     cmp	     al	, 47h
+1  2698	1C41  75 03			     jne	     _hc_quit
+1  2699	1C43  E8 0488			     call    HandleG
+1  2700	1C46			     _hc_quit:
+1  2701	1C46  C3			     ret
+1  2702	1C47			     endp    HandleCommands
+   2703					       include lib/commands/A.asm
+1  2704	1C47			     HandleA	     proc
+1  2705	1C47  C6 06 1748r 00		     mov	     disconnect_timer ,	0
+1  2706	1C4C  80 3E 1C5Fr 01		     cmp	     SendedB , 1
+1  2707	1C51  74 09			     je		     _ha_quit
+1  2708	1C53  E8 00C7			     call    SendB
+1  2709	1C56  C6 06 1C5Fr 01 90		     mov	     SendedB , 1
+1  2710	1C5C			     _ha_quit:
+1  2711	1C5C  C3			     ret
+1  2712	1C5D			     endp    HandleA
+   2713					       include lib/commands/B.asm
+1  2714	1C5D  ??		     random  db	     ?
+1  2715	1C5E  00		     RecievedB	     db	     0
+1  2716	1C5F  00		     SendedB	     db	     0
+1  2717	1C60  00		     ColorSelected   db	     0
+1  2718
+1  2719	1C61  00		     saved   db	     0
+1  2720
+1  2721	1C62			     HandleB proc
+1  2722					     ;cmp	     ColorSelected , 1
+1  2723					     ;jne	     _hb_handle
+1  2724					     ;ret
+1  2725	1C62			     _hb_handle:
+1  2726	1C62  E8 FABB			     call    Get_chr
+1  2727	1C65  72 FB			     jb		     _hb_handle
+1  2728	1C67  A2 1C61r			     mov	     saved , al
+1  2729	1C6A  80 3E 1C5Fr 01		     cmp	     SendedB , 1
+1  2730	1C6F  74 03			     je		     _hb_wasSent
+1  2731	1C71  E8 00A9			     call    SendB
+1  2732	1C74			     _hb_wasSent:
+1  2733	1C74  80 3E 1C61r 32		     cmp	     saved , 32h
+1  2734	1C79  74 29			     je		     _hb_32h
+1  2735	1C7B  80 3E 1C61r 31		     cmp	     saved , 31h
+1  2736	1C80  74 11			     je		     _hb_31h
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 49
+main.asm
+
+
+
+1  2737	1C82			     _hb_30h:
+1  2738	1C82  80 3E 1C5Dr 30		     cmp	     random , 30h
+1  2739	1C87  74 2C			     je		     _hb_draw
+1  2740	1C89  80 3E 1C5Dr 31		     cmp	     random , 31h
+1  2741	1C8E  74 56			     je		     _hb_lose
+1  2742	1C90  EB 29 90			     jmp	     _hb_win
+1  2743	1C93			     _hb_31h:
+1  2744	1C93  80 3E 1C5Dr 30		     cmp	     random , 30h
+1  2745	1C98  74 21			     je		     _hb_win
+1  2746	1C9A  80 3E 1C5Dr 31		     cmp	     random , 31h
+1  2747	1C9F  74 14			     je		     _hb_draw
+1  2748	1CA1  EB 43 90			     jmp	     _hb_lose
+1  2749	1CA4			     _hb_32h:
+1  2750	1CA4  80 3E 1C5Dr 30		     cmp	     random , 30h
+1  2751	1CA9  74 3B			     je		     _hb_lose
+1  2752	1CAB  80 3E 1C5Dr 31		     cmp	     random , 31h
+1  2753	1CB0  74 09			     je		     _hb_win
+1  2754	1CB2  EB 01 90			     jmp	     _hb_draw
+1  2755	1CB5			     _hb_draw:
+1  2756	1CB5  E8 0065			     call    SendB
+1  2757	1CB8  EB 62 90			     jmp	     _hb_quit
+1  2758	1CBB			     _hb_win:
+1  2759	1CBB  C6 06 1773r 01		     mov	     GameStart , 1
+1  2760	1CC0  E8 0AA5			     call StartNewGame
+1  2761	1CC3  C6 06 2594r 01 90		     mov	     color , 1
+1  2762	1CC9  C6 06 2595r 0F 90		     mov	     my_color ,	0fh
+1  2763	1CCF  C6 06 2596r 0A 90		     mov	     enemy_color , 0ah
+1  2764	1CD5  C7 06 06C2r 0582r		     mov	     desk_offset , offset white_desk
+1  2765	1CDB  C6 06 06C4r 01		     mov	     MyMove , 1
+1  2766	1CE0  E8 06E2			     call    PrintMyMove
+1  2767	1CE3  EB 29 90			     jmp	     _hb_draw1
+1  2768	1CE6			     _hb_lose:
+1  2769	1CE6  C6 06 1773r 01		     mov	     GameStart , 1
+1  2770	1CEB  E8 0A7A			     call    StartNewGame
+1  2771	1CEE  C6 06 2594r 00 90		     mov	     color , 0
+1  2772	1CF4  C6 06 2595r 0A 90		     mov	     my_color ,	0ah
+1  2773	1CFA  C6 06 2596r 0F 90		     mov	     enemy_color , 0fh
+1  2774	1D00  C7 06 06C2r 0602r		     mov	     desk_offset , offset black_desk
+1  2775	1D06  C6 06 06C4r 00		     mov	     MyMove , 0
+1  2776	1D0B  E8 06AE			     call    PrintEnemyMove
+1  2777	1D0E			     _hb_draw1:
+1  2778	1D0E  E8 E526			     call    write_letters
+1  2779	1D11  E8 E54F			     call    write_numbers
+1  2780	1D14  E8 E5C8			     call    DrawFigures
+1  2781	1D17  C6 06 1C60r 01		     mov	     ColorSelected , 1
+1  2782	1D1C			     _hb_quit:
+1  2783	1D1C  C3			     ret
+1  2784	1D1D			     endp    HandleB
+1  2785
+1  2786	1D1D			     SendB proc
+1  2787	1D1D  50			     push    ax
+1  2788	1D1E  52			     push    dx
+1  2789	1D1F  B0 42			     mov	     al	, 42h
+1  2790	1D21  E8 F9D5			     call    Out_Chr
+1  2791	1D24  E8 0006			     call    GetRandom
+1  2792	1D27  E8 F9CF			     call    Out_Chr
+1  2793	1D2A  5A			     pop	     dx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 50
+main.asm
+
+
+
+1  2794	1D2B  58			     pop	     ax
+1  2795	1D2C  C3			     ret
+1  2796	1D2D			     endp    SendB
+1  2797
+1  2798				     ;al - random number
+1  2799	1D2D			     GetRandom	     proc
+1  2800	1D2D  52			     push    dx
+1  2801	1D2E  33 C0			     xor	     ax	, ax
+1  2802	1D30  A0 1747r			     mov	     al	, ticks_count
+1  2803	1D33  B2 03			     mov	     dl	, 3
+1  2804	1D35  F6 F2			     div	     dl
+1  2805	1D37  80 C4 30			     add	     ah	, 30h
+1  2806	1D3A  88 26 1C5Dr		     mov	     random , ah
+1  2807	1D3E  8A C4			     mov	     al	, ah
+1  2808	1D40  5A			     pop	     dx
+1  2809	1D41  C3			     ret
+1  2810	1D42			     endp    GetRandom
+1  2811
+   2812					       include lib/commands/C.asm
+1  2813	1D42			     HandleC	     proc
+1  2814	1D42  C6 06 1DE8r 01 90		     mov     commandIsGood , 1
+1  2815	1D48  50			     push    ax
+1  2816	1D49  53			     push    bx
+1  2817	1D4A  51			     push    cx
+1  2818	1D4B  52			     push    dx
+1  2819	1D4C  80 3E 06C4r 00		     cmp	     MyMove , 0
+1  2820	1D51  75 58			     jne	     _hc1_quit
+1  2821	1D53  33 C0			     xor	     ax	, ax
+1  2822	1D55  E8 019A			     call    GetSymbol
+1  2823	1D58  2C 30			     sub	     al	, 30h
+1  2824	1D5A  B3 0A			     mov	     bl	, 10
+1  2825	1D5C  F6 E3			     mul	     bl
+1  2826	1D5E  33 DB			     xor	     bx	, bx
+1  2827	1D60  8B D8			     mov	     bx	, ax
+1  2828	1D62  33 C0			     xor	     ax	, ax
+1  2829	1D64  E8 018B			     call    GetSymbol
+1  2830	1D67  2C 30			     sub	     al	, 30h
+1  2831	1D69  03 D8			     add	     bx	, ax
+1  2832	1D6B  83 FB 00			     cmp	     bx	, 0
+1  2833	1D6E  74 08			     je		     _enemy_win
+1  2834	1D70  8B CB			     mov	     cx	, bx
+1  2835
+1  2836
+1  2837
+1  2838					     ;shl	     cl	, 1
+1  2839
+1  2840	1D72  E8 0074			     call    CheckEnemyCommand
+1  2841	1D75  EB 0B 90			     jmp	     _hc_result
+1  2842	1D78			     _enemy_win:
+1  2843	1D78  E8 012E			     call    CheckEnemyWin
+1  2844	1D7B  80 3E 0798r 01		     cmp	     GameFinished , 1
+1  2845	1D80  74 29			     je		     _hc1_quit
+1  2846	1D82			     _hc_result:
+1  2847	1D82  80 3E 1DE8r 01		     cmp	     commandIsGood , 1
+1  2848	1D87  74 0E			     je		     _good_command
+1  2849	1D89			     _bad_command:
+1  2850	1D89  E8 016C			     call    BadCommand
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 51
+main.asm
+
+
+
+1  2851	1D8C  C6 06 06C4r 00		     mov	     MyMove , 0
+1  2852	1D91  E8 060D			     call    PrintBadEnemyMove
+1  2853	1D94  EB 15 90			     jmp	     _hc1_quit
+1  2854	1D97			     _good_command:
+1  2855	1D97  E8 0175			     call    GoodCommand
+1  2856	1D9A  E8 F38F			     call    CopyActiveDeskToDesk
+1  2857	1D9D  C6 06 06C4r 01		     mov	     MyMove , 1
+1  2858	1DA2  E8 0620			     call    PrintMyMove
+1  2859	1DA5  E8 0008			     call    CheckIAmWin
+1  2860	1DA8  EB 01 90			     jmp	     _hc1_quit
+1  2861	1DAB			     _hc1_quit:
+1  2862	1DAB  5A			     pop	     dx
+1  2863	1DAC  59			     pop	     cx
+1  2864	1DAD  5B			     pop	     bx
+1  2865	1DAE  58			     pop	     ax
+1  2866	1DAF  C3			     ret
+1  2867	1DB0			     endp	     HandleC
+1  2868
+1  2869	1DB0			     CheckIAmWin     proc
+1  2870	1DB0  50			     push    ax
+1  2871	1DB1  80 3E 2594r 01		     cmp	     color , 1
+1  2872	1DB6  74 0A			     je		     _aiw_white
+1  2873	1DB8  80 3E 0795r 00		     cmp	     black_count , 0
+1  2874	1DBD  74 0D			     je		     _aiw_win
+1  2875	1DBF  EB 25 90			     jmp	     _aiw_quit
+1  2876	1DC2			     _aiw_white:
+1  2877	1DC2  80 3E 0796r 00		     cmp	     white_count , 0
+1  2878	1DC7  74 03			     je		     _aiw_win
+1  2879	1DC9  EB 1B 90			     jmp	     _aiw_quit
+1  2880	1DCC			     _aiw_win:
+1  2881	1DCC  E8 0608			     call    PrintIWin
+1  2882	1DCF  B0 43			     mov	     al	, 43h
+1  2883	1DD1  E8 F925			     call    Out_chr
+1  2884	1DD4  B0 30			     mov	     al	, 30h
+1  2885	1DD6  E8 F920			     call    Out_chr
+1  2886	1DD9  B0 30			     mov	     al	, 30h
+1  2887	1DDB  E8 F91B			     call    Out_chr
+1  2888	1DDE  C6 06 0798r 01		     mov	     GameFinished , 1
+1  2889	1DE3  E8 01E1			     call    SendE
+1  2890	1DE6			     _aiw_quit:
+1  2891	1DE6  58			     pop	     ax
+1  2892	1DE7  C3			     ret
+1  2893	1DE8			     endp    CheckIAmWin
+1  2894
+1  2895
+1  2896
+1  2897	1DE8  01		     commandIsGood   db	     1
+1  2898
+1  2899	1DE9			     CheckEnemyCommand	     proc
+1  2900	1DE9  49			     dec	     cx
+1  2901	1DEA  80 3E 0797r 00		     cmp	     WaitingForResponse	, 0
+1  2902	1DEF  75 7F			     jne	     _cec_bad
+1  2903	1DF1  51			     push    cx
+1  2904	1DF2  80 3E 2594r 01		     cmp	     color , 1
+1  2905	1DF7  74 08			     je		     _change_to_black
+1  2906	1DF9  C6 06 0828r 01		     mov	     procedure_color , 1
+1  2907	1DFE  EB 06 90			     jmp	     _change_end
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 52
+main.asm
+
+
+
+1  2908	1E01			     _change_to_black:
+1  2909	1E01  C6 06 0828r 00		     mov	     procedure_color , 0
+1  2910	1E06			     _change_end     :
+1  2911	1E06  C6 06 1DE8r 01		     mov	     commandIsGood , 1
+1  2912	1E0B  E8 00E4			     call    GetSymbol
+1  2913	1E0E  8A D8			     mov	     bl	, al
+1  2914	1E10  E8 00DF			     call    GetSymbol
+1  2915	1E13  8A F8			     mov	     bh	, al
+1  2916	1E15  E8 006A			     call    ToMyCoordinates
+1  2917	1E18  88 3E 04CCr		     mov	     row , bh
+1  2918	1E1C  88 1E 04CDr		     mov	     column , bl
+1  2919	1E20  E8 EA06			     call    HandleSelect
+1  2920	1E23  59			     pop	     cx
+1  2921	1E24  80 3E 08C5r 00		     cmp	     sucess , 0
+1  2922	1E29  74 45			     je		     _cec_bad
+1  2923	1E2B			     _check:
+1  2924	1E2B  51			     push    cx
+1  2925	1E2C  E8 00C3			     call    GetSymbol
+1  2926	1E2F  8A D8			     mov	     bl	, al
+1  2927	1E31  E8 00BE			     call    GetSymbol
+1  2928	1E34  8A F8			     mov	     bh	, al
+1  2929	1E36  E8 0049			     call    ToMyCoordinates
+1  2930
+1  2931	1E39  88 3E 04CCr		     mov	     row , bh
+1  2932	1E3D  88 1E 04CDr		     mov	     column , bl
+1  2933	1E41  E8 EA8D			     call    HandleMove
+1  2934	1E44  59			     pop	     cx
+1  2935	1E45  80 3E 0D36r 01		     cmp	     isRightMove , 1
+1  2936	1E4A  75 24			     jne	     _cec_bad
+1  2937	1E4C  E2 DD			     loop    _check
+1  2938	1E4E  80 3E 0794r 01		     cmp	     last_figure_value , 1
+1  2939	1E53  74 11			     je		     _cec_checker
+1  2940	1E55  80 3E 0794r 03		     cmp	     last_figure_value , 3
+1  2941	1E5A  74 0A			     je		     _cec_checker
+1  2942	1E5C  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  2943	1E61  75 0D			     jne	     _cec_bad
+1  2944	1E63  E9 ED0C			     jmp	     _cec_quit
+1  2945	1E66			     _cec_checker:
+1  2946	1E66  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  2947	1E6B  75 03			     jne	     _cec_bad
+1  2948	1E6D  EB 12 90			     jmp	     _cecq_quit
+1  2949	1E70			     _cec_bad:
+1  2950	1E70  E8 E941			     call    CancelAllActions
+1  2951	1E73  03 C9			     add	     cx	, cx
+1  2952	1E75			     _cec_bad_loop:
+1  2953	1E75  51			     push    cx
+1  2954	1E76  E8 0079			     call    GetSymbol
+1  2955	1E79  59			     pop	     cx
+1  2956	1E7A  E2 F9			     loop    _cec_bad_loop
+1  2957	1E7C  C6 06 1DE8r 00		     mov	     commandIsGood , 0
+1  2958	1E81			     _cecq_quit:
+1  2959	1E81  C3			     ret
+1  2960	1E82			     endp    CheckEnemyCommand
+1  2961
+1  2962				     ;bx - bl -	column , bh - row in enemyes coordinates
+1  2963				     ;bx - column and row in my	coordinates
+1  2964	1E82			     ToMyCoordinates	     proc near
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 53
+main.asm
+
+
+
+1  2965	1E82  80 3E 0828r 00		     cmp	     procedure_color , 0
+1  2966	1E87  74 11			     je		     _tmc_black
+1  2967	1E89  80 EF 31			     sub	     bh	, 31h
+1  2968	1E8C  80 EB 41			     sub	     bl	, 41h
+1  2969	1E8F  52			     push    dx
+1  2970	1E90  B2 07			     mov	     dl	, 7
+1  2971	1E92  2A D3			     sub	     dl	, bl
+1  2972	1E94  8A DA			     mov	     bl	, dl
+1  2973	1E96  5A			     pop	     dx
+1  2974	1E97  EB 0F 90			     jmp	     _tmc_quit
+1  2975	1E9A			     _tmc_black:
+1  2976	1E9A  80 EB 41			     sub	     bl	, 41h
+1  2977	1E9D  80 EF 31			     sub	     bh	, 31h
+1  2978	1EA0  52			     push    dx
+1  2979	1EA1  B2 07			     mov	     dl	, 7
+1  2980	1EA3  2A D7			     sub	     dl	, bh
+1  2981	1EA5  8A FA			     mov	     bh	, dl
+1  2982	1EA7  5A			     pop	     dx
+1  2983	1EA8			     _tmc_quit:
+1  2984	1EA8  C3			     retn
+1  2985	1EA9			     endp    ToMyCoordinates
+1  2986
+1  2987
+1  2988	1EA9			     CheckEnemyWin   proc
+1  2989	1EA9  80 3E 0828r 01		     cmp	     procedure_color , 1
+1  2990	1EAE  74 1E			     je		     _cew_white
+1  2991	1EB0  80 3E 0795r 00		     cmp	     black_count , 0
+1  2992	1EB5  75 35			     jne	     _cew_bad
+1  2993	1EB7  E8 0514			     call    PrintEnemyWin
+1  2994					     ;mov	     SendedB , 0
+1  2995	1EBA  E8 010A			     call    SendE
+1  2996	1EBD  C6 06 0798r 01		     mov	     GameFinished , 1
+1  2997	1EC2  C6 06 1F9Er 01 90		     mov	     e_recieved	, 1
+1  2998	1EC8  E8 0104			     call    ChangeSide
+1  2999	1ECB  EB 24 90			     jmp	     _cew_quit					     ;TODO: add	fish variant
+1  3000	1ECE			     _cew_white:
+1  3001	1ECE  80 3E 0796r 00		     cmp	     white_count , 0
+1  3002	1ED3  75 17			     jne	     _cew_bad
+1  3003	1ED5  E8 04F6			     call    PrintEnemyWin
+1  3004	1ED8  E8 00EC			     call    SendE
+1  3005					     ;mov	     SendedB , 0
+1  3006	1EDB  C6 06 0798r 01		     mov	     GameFinished , 1
+1  3007	1EE0  C6 06 1F9Er 01 90		     mov	     e_recieved	, 1
+1  3008	1EE6  E8 00E6			     call    ChangeSide
+1  3009	1EE9  EB 06 90			     jmp	     _cew_quit
+1  3010	1EEC			     _cew_bad:
+1  3011	1EEC  C6 06 1DE8r 00		     mov	     commandIsGood , 0
+1  3012	1EF1			     _cew_quit:
+1  3013	1EF1  C3			     ret
+1  3014	1EF2			     endp    CheckEnemyWin
+1  3015
+1  3016
+1  3017
+1  3018	1EF2			     GetSymbol	     proc
+1  3019	1EF2			     _gs_1:
+1  3020	1EF2  E8 F82B			     call    Get_Chr
+1  3021	1EF5  72 FB			     jb		     _gs_1
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 54
+main.asm
+
+
+
+1  3022	1EF7  C3			     ret
+1  3023	1EF8			     endp    GetSymbol
+1  3024
+1  3025	1EF8			     BadCommand	proc
+1  3026	1EF8  50			     push    ax
+1  3027	1EF9  C6 06 1BB7r 00		     mov	     isFree , 0
+1  3028	1EFE  B0 44			     mov	     al	, 44h
+1  3029	1F00  E8 FCB6			     call    WriteInOutBuff
+1  3030	1F03  B0 31			     mov	     al	, 31h
+1  3031	1F05  E8 FCB1			     call    WriteInOutBuff
+1  3032	1F08  C6 06 1BB7r 01		     mov	     isFree , 1
+1  3033	1F0D  58			     pop	     ax
+1  3034	1F0E  C3			     ret
+1  3035	1F0F			     endp    BadCommand
+1  3036
+1  3037	1F0F			     GoodCommand proc
+1  3038	1F0F  50			     push    ax
+1  3039	1F10  C6 06 1BB7r 00		     mov	     isFree , 0
+1  3040	1F15  B0 44			     mov	     al	, 44h
+1  3041	1F17  E8 FC9F			     call    WriteInOutBuff
+1  3042	1F1A  B0 30			     mov	     al	, 30h
+1  3043	1F1C  E8 FC9A			     call    WriteInOutBuff
+1  3044	1F1F  C6 06 1BB7r 01		     mov	     isFree , 1
+1  3045	1F24  58			     pop	     ax
+1  3046	1F25  C3			     ret
+1  3047	1F26			     endp    GoodCommand
+   3048					       include lib/commands/D.asm
+1  3049	1F26			     HandleD	     proc
+1  3050	1F26  E8 FFC9			     call    GetSymbol
+1  3051	1F29  2C 30			     sub	     al	, 30h
+1  3052	1F2B  80 3E 0797r 01		     cmp	     WaitingForResponse	, 1
+1  3053	1F30  75 30			     jne	     _hd_quit
+1  3054	1F32  3C 00			     cmp	     al	, 0
+1  3055	1F34  74 19			     je		     _hd_good
+1  3056	1F36  E8 E87B			     call    CancelAllActions
+1  3057	1F39  8A 1E 0793r		     mov	     bl	, last_figure_column
+1  3058	1F3D  8A 3E 0792r		     mov	     bh	, last_figure_row
+1  3059	1F41  E8 F270			     call    GetCoordinates
+1  3060	1F44  33 C0			     xor	     ax	, ax
+1  3061	1F46  E8 E9A0			     call    RecolorCell
+1  3062	1F49  E8 E393			     call    DrawFigures
+1  3063	1F4C  EB 14 90			     jmp	     _hd_quit
+1  3064	1F4F			     _hd_good:
+1  3065	1F4F  E8 F1DA			     call    CopyActiveDeskToDesk
+1  3066	1F52  C6 06 0797r 00		     mov	     WaitingForResponse	, 0
+1  3067	1F57  E8 0462			     call    PrintEnemyMove
+1  3068	1F5A  C6 06 06C4r 00		     mov	     MyMove , 0
+1  3069	1F5F  E8 0001			     call    CheckIfEnemyWon
+1  3070	1F62			     _hd_quit:
+1  3071	1F62  C3			     ret
+1  3072	1F63			     endp    HandleD
+1  3073
+1  3074
+1  3075	1F63			     CheckIfEnemyWon proc
+1  3076	1F63  80 3E 2594r 01		     cmp	     color , 1
+1  3077	1F68  74 1B			     je		     _ciew_white
+1  3078	1F6A  80 3E 0796r 00		     cmp	     white_count , 0
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 55
+main.asm
+
+
+
+1  3079	1F6F  75 2C			     jne	     _ciew_quit
+1  3080	1F71  E8 045A			     call    PrintEnemyWin
+1  3081	1F74  E8 0050			     call    SendE
+1  3082	1F77  C6 06 0798r 01		     mov	     GameFinished , 1
+1  3083	1F7C  C6 06 1F9Er 01 90		     mov	     e_recieved	, 1
+1  3084	1F82  EB 01 90			     jmp	     _ciew_white
+1  3085	1F85			     _ciew_white:
+1  3086	1F85  80 3E 0795r 00		     cmp	     black_count , 0
+1  3087	1F8A  75 11			     jne	     _ciew_quit
+1  3088	1F8C  E8 043F			     call    PrintEnemyWin
+1  3089	1F8F  E8 0035			     call    SendE
+1  3090	1F92  C6 06 0798r 01		     mov	     GameFinished , 1
+1  3091	1F97  C6 06 1F9Er 01 90		     mov	     e_recieved	, 1
+1  3092	1F9D			     _ciew_quit:
+1  3093	1F9D  C3			     ret
+1  3094	1F9E			     endp    CheckIfEnemyWon
+   3095					       include lib/commands/E.asm
+1  3096	1F9E  00		     e_recieved	     db	     0
+1  3097
+1  3098	1F9F  00		     GameOver	     db	     0
+1  3099
+1  3100	1FA0			     HandleE proc
+1  3101	1FA0  80 3E 0795r 00		     cmp	     black_count , 0
+1  3102	1FA5  74 0A			     je		     _handlee_cont
+1  3103	1FA7  80 3E 0796r 00		     cmp	     white_count , 0
+1  3104	1FAC  74 03			     je		     _handlee_cont
+1  3105
+1  3106
+1  3107	1FAE  EB 16 90			     jmp	     _handleE_quit
+1  3108	1FB1			     _handlee_cont:
+1  3109	1FB1  FE 06 0799r		     inc	     GameCount
+1  3110	1FB5  80 3E 0799r 02		     cmp	     GameCount , 2
+1  3111	1FBA  75 05			     jne	     _handle_e_skip
+1  3112	1FBC  C6 06 1F9Fr 01		     mov	     GameOver ,	1
+1  3113	1FC1			     _handle_e_skip:
+1  3114	1FC1  C6 06 1F9Er 01		     mov	     e_recieved	, 1
+1  3115
+1  3116	1FC6			     _handleE_quit:
+1  3117	1FC6  C3			     ret
+1  3118	1FC7			     endp    HandleE
+1  3119
+1  3120	1FC7			     SendE   proc
+1  3121	1FC7  50			     push    ax
+1  3122	1FC8  B0 45			     mov	     al	, 45h
+1  3123	1FCA  E8 F72C			     call    Out_chr
+1  3124	1FCD  58			     pop	     ax
+1  3125	1FCE  C3			     ret
+1  3126	1FCF			     endp    SendE
+1  3127
+1  3128	1FCF			     ChangeSide	     proc
+1  3129	1FCF  C7 06 0181r 0001		     mov	     x_off , 1
+1  3130	1FD5  C7 06 0183r 0001		     mov	     y_off , 1
+1  3131	1FDB  E8 E1A7			     call    print_desk
+1  3132	1FDE  C7 06 0181r 0001		     mov	     x_off , 1
+1  3133	1FE4  C7 06 0183r 0001		     mov	     y_off , 1
+1  3134	1FEA  E8 E198			     call    print_desk
+1  3135	1FED  C6 06 0795r 0C		     mov	     black_count , 12
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 56
+main.asm
+
+
+
+1  3136	1FF2  C6 06 0796r 0C		     mov	     white_count , 12
+1  3137	1FF7  80 3E 2594r 00		     cmp	     color , 0
+1  3138	1FFC  74 23			     je		     _cs_0
+1  3139	1FFE  C6 06 2594r 00 90		     mov	     color , 0
+1  3140	2004  C6 06 2595r 0A 90		     mov	     my_color ,	0ah
+1  3141	200A  C6 06 2596r 0F 90		     mov	     enemy_color , 0fh
+1  3142	2010  C7 06 06C2r 0602r		     mov	     desk_offset , offset black_desk
+1  3143	2016  C6 06 06C4r 00		     mov	     MyMove , 0
+1  3144	201B  E8 039E			     call    PrintEnemyMove
+1  3145	201E  EB 21 90			     jmp	     _cs_o_quit
+1  3146	2021			     _cs_0:
+1  3147	2021  C6 06 2594r 01 90		     mov	     color , 1
+1  3148	2027  C6 06 2595r 0F 90		     mov	     my_color ,	0fh
+1  3149	202D  C6 06 2596r 0A 90		     mov	     enemy_color , 0ah
+1  3150	2033  C7 06 06C2r 0582r		     mov	     desk_offset , offset white_desk
+1  3151	2039  C6 06 06C4r 01		     mov	     MyMove , 1
+1  3152	203E  E8 0384			     call    PrintMyMove
+1  3153	2041			     _cs_o_quit:
+1  3154	2041  E8 E29B			     call    DrawFigures
+1  3155	2044  E8 E1F0			     call    write_letters
+1  3156	2047  E8 E219			     call    write_numbers
+1  3157	204A  C6 06 0797r 00		     mov	     WaitingForResponse	, 0
+1  3158	204F  C3			     ret
+1  3159	2050			     endp    ChangeSide
+   3160					       include lib/commands/N.asm
+1  3161
+1  3162	2050  0A*(??)		     enemy_name	     db	     10	     dup     (?)
+1  3163	205A  00		     length_name     db	     0
+1  3164
+1  3165	205B  00		     packet_name_length	     db	     0
+1  3166	205C  00		     n		     db		     0
+1  3167
+1  3168	205D			     HandleN	     proc
+1  3169	205D  C6 06 205Cr 00		     mov	     n , 0
+1  3170	2062  E8 FE8D			     call    GetSymbol
+1  3171	2065  2C 30			     sub	     al	, 30h
+1  3172	2067  B3 0A			     mov	     bl	, 10
+1  3173	2069  F6 E3			     mul	     bl
+1  3174	206B  33 DB			     xor	     bx	, bx
+1  3175	206D  8A D8			     mov	     bl	, al
+1  3176	206F  33 C0			     xor	     ax	, ax
+1  3177	2071  E8 FE7E			     call    GetSymbol
+1  3178	2074  2C 30			     sub	     al	, 30h
+1  3179	2076  02 D8			     add	     bl	, al
+1  3180	2078  32 FF			     xor	     bh	, bh
+1  3181	207A  83 FB 00			     cmp	     bx	, 0
+1  3182	207D  74 4B			     je		     _handleN_quit
+1  3183	207F  88 1E 205Br		     mov	     packet_name_length	, bl
+1  3184	2083  BB 2050r			     mov	     bx	, offset enemy_name
+1  3185	2086  33 C9			     xor	     cx	, cx
+1  3186	2088  8A 0E 205Br		     mov	     cl	, packet_name_length
+1  3187	208C  51			     push    cx
+1  3188	208D  B4 03			     mov	     ah	, 03h
+1  3189	208F  B7 00			     mov	     bh	, 0
+1  3190	2091  CD 10			     int	     10h
+1  3191	2093  59			     pop	     cx
+1  3192	2094  52			     push    dx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 57
+main.asm
+
+
+
+1  3193	2095  51			     push    cx
+1  3194	2096  B4 02			     mov	     ah	, 02h
+1  3195	2098  B6 02			     mov	     dh	, 2
+1  3196	209A  B2 2C			     mov	     dl	, 02Ch
+1  3197	209C  CD 10			     int	     10h
+1  3198	209E  59			     pop	     cx
+1  3199	209F			     _read_name:
+1  3200	209F  51			     push    cx
+1  3201	20A0  E8 FE4F			     call    GetSymbol
+1  3202	20A3  2E: 88 07			     mov	     cs:[bx] , al
+1  3203	20A6  43			     inc	     bx
+1  3204	20A7  80 3E 205Cr 0A		     cmp	     n , 10
+1  3205	20AC  74 0E			     je		     _don_t_print
+1  3206	20AE  FE 06 205Cr		     inc	     n
+1  3207	20B2  FE 06 205Ar		     inc	     length_name
+1  3208	20B6  B4 02			     mov	     ah	, 02h
+1  3209	20B8  8A D0			     mov	     dl	, al
+1  3210	20BA  CD 21			     int	     21h
+1  3211	20BC			     _don_t_print:
+1  3212	20BC  59			     pop	     cx
+1  3213	20BD  E2 E0			     loop    _read_name
+1  3214	20BF  B7 00			     mov	     bh	, 0
+1  3215	20C1  B4 02			     mov	     ah	, 02h
+1  3216	20C3  B2 3E			     mov	     dl	, 3eh
+1  3217	20C5  CD 21			     int	     21h
+1  3218	20C7  5A			     pop	     dx
+1  3219	20C8  CD 10			     int	     10h
+1  3220	20CA			     _handleN_quit:
+1  3221	20CA  C3			     ret
+1  3222	20CB			     endp    HandleN
+1  3223
+   3224					       include lib/commands/G.asm
+1  3225
+1  3226	20CB  00		     right_side		     db		     0
+1  3227	20CC  00		     bottom_side	     db		     0
+1  3228
+1  3229	20CD  00		     packet_chat_length	     db	     0
+1  3230
+1  3231	20CE			     HandleG	     proc
+1  3232	20CE  B6 02			     mov	     dh	, 2
+1  3233	20D0  E8 0096			     call    ClearPreviousMessage
+1  3234	20D3  E8 FE1C			     call    GetSymbol
+1  3235	20D6  2C 30			     sub	     al	, 30h
+1  3236	20D8  B3 0A			     mov	     bl	, 10
+1  3237	20DA  F6 E3			     mul	     bl
+1  3238	20DC  33 DB			     xor	     bx	, bx
+1  3239	20DE  8A D8			     mov	     bl	, al
+1  3240	20E0  33 C0			     xor	     ax	, ax
+1  3241	20E2  E8 FE0D			     call    GetSymbol
+1  3242	20E5  2C 30			     sub	     al	, 30h
+1  3243	20E7  02 D8			     add	     bl	, al
+1  3244	20E9  32 FF			     xor	     bh	, bh
+1  3245	20EB  83 FB 00			     cmp	     bx	, 0
+1  3246	20EE  74 78			     je		     _handleG_quit
+1  3247	20F0  88 1E 20CDr		     mov	     packet_chat_length	, bl
+1  3248	20F4  33 C9			     xor	     cx	, cx
+1  3249	20F6  8A 0E 20CDr		     mov	     cl	, packet_chat_length
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 58
+main.asm
+
+
+
+1  3250	20FA  51			     push    cx
+1  3251	20FB  B4 03			     mov	     ah	, 03h
+1  3252	20FD  B7 00			     mov	     bh	, 0
+1  3253	20FF  CD 10			     int	     10h
+1  3254	2101  59			     pop	     cx
+1  3255	2102  52			     push    dx
+1  3256	2103  51			     push    cx
+1  3257	2104  B4 02			     mov	     ah	, 02h
+1  3258	2106  B6 02			     mov	     dh	, 2
+1  3259	2108  88 36 20CCr		     mov	     bottom_side , dh
+1  3260	210C  B2 2C			     mov	     dl	, 02Ch
+1  3261	210E  80 3E 205Ar 0A		     cmp	     length_name , 10
+1  3262	2113  7F 0A			     jg		     _more
+1  3263	2115  02 16 205Ar		     add	     dl	, length_name
+1  3264	2119  80 C2 01			     add	     dl	, 1
+1  3265	211C  EB 04 90			     jmp	     _han_skip
+1  3266	211F			     _more:
+1  3267	211F  80 C2 0B			     add	     dl	, 11
+1  3268	2122			     _han_skip:
+1  3269	2122  88 16 20CBr		     mov	     right_side	, dl
+1  3270	2126  59			     pop	     cx
+1  3271	2127			     _read_chat:
+1  3272	2127  51			     push    cx
+1  3273	2128  B4 02			     mov	     ah	, 02h
+1  3274	212A  8A 36 20CCr		     mov	     dh	, bottom_side
+1  3275	212E  8A 16 20CBr		     mov	     dl	, right_side
+1  3276	2132  B7 00			     mov	     bh	, 0
+1  3277	2134  CD 10			     int	     10h
+1  3278	2136  E8 FDB9			     call    GetSymbol
+1  3279	2139  80 3E 20CBr 4F		     cmp	     right_side	, 4fh
+1  3280	213E  75 0D			     jne	     _dont_coret
+1  3281	2140  FE 06 20CCr		     inc	     bottom_side
+1  3282	2144  8A 36 20CCr		     mov	     dh	, bottom_side
+1  3283	2148  C6 06 20CBr 2B		     mov	     right_side	, 02bh
+1  3284	214D			     _dont_coret:
+1  3285	214D  FE 06 20CBr		     inc	     right_side
+1  3286	2151  B4 09			     mov	     ah	, 09h
+1  3287	2153  8A D0			     mov	     dl	, al
+1  3288	2155  B7 00			     mov	     bh	, 0
+1  3289	2157  8A 1E 2596r		     mov	     bl	, enemy_color
+1  3290	215B  B9 0001			     mov	     cx	, 1
+1  3291	215E  CD 10			     int	     10h
+1  3292	2160  59			     pop	     cx
+1  3293	2161  E2 C4			     loop    _read_chat
+1  3294	2163  B7 00			     mov	     bh	, 0
+1  3295	2165  5A			     pop	     dx
+1  3296	2166  CD 10			     int	     10h
+1  3297	2168			     _handleG_quit:
+1  3298	2168  C3			     ret
+1  3299	2169			     endp    HandleG
+1  3300
+1  3301				     ;dh - row to start
+1  3302	2169			     ClearPreviousMessage    proc
+1  3303	2169  B2 2C			     mov	     dl	, 02ch
+1  3304	216B  33 C9			     xor	     cx	, cx
+1  3305	216D  B1 78			     mov	     cl	, 120
+1  3306	216F			     _fl:
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 59
+main.asm
+
+
+
+1  3307	216F  51			     push    cx
+1  3308	2170  B4 02			     mov	     ah	, 02h
+1  3309	2172  B7 00			     mov	     bh	, 0
+1  3310	2174  CD 10			     int	     10h
+1  3311	2176  52			     push    dx
+1  3312	2177  B4 09			     mov	     ah	, 09h
+1  3313	2179  B0 20			     mov	     al	, 20h
+1  3314	217B  B7 00			     mov	     bh	, 0
+1  3315	217D  8A 1E 2596r		     mov	     bl	, enemy_color
+1  3316	2181  B9 0001			     mov	     cx	, 1
+1  3317	2184  CD 10			     int	     10h
+1  3318	2186  5A			     pop	     dx
+1  3319	2187  80 FA 4F			     cmp	     dl	, 4fh
+1  3320	218A  75 04			     jne	     _cont_fl
+1  3321	218C  B2 2B			     mov	     dl	, 02bh
+1  3322	218E  FE C6			     inc	     dh
+1  3323	2190			     _cont_fl:
+1  3324	2190  FE C2			     inc	     dl
+1  3325	2192  59			     pop	     cx
+1  3326	2193  E2 DA			     loop    _fl
+1  3327	2195  C3			     ret
+1  3328	2196			     endp ClearPreviousMessage
+1  3329
+1  3330	2196  00		     NWas    db	     0
+1  3331
+1  3332	2197			     SengG   proc
+1  3333	2197  56			     push    si
+1  3334	2198  57			     push    di
+1  3335	2199  BE 265Fr			     mov	     si	, offset input_buff
+1  3336					     ;cmp	     Nwas , 0
+1  3337					     ;jne	     _g_send
+1  3338					     ;mov	     al	, 43h
+1  3339					     ;call   Out_chr
+1  3340					     ;mov	     al	, 30h
+1  3341					     ;call   Out_chr
+1  3342					     ;mov	     al	, 39h
+1  3343					     ;call   Out_chr
+1  3344					     ;mov	     dx	, offset input_buff
+1  3345					     ;mov	     cx	, 9
+1  3346					     ;mov	     NWas , 1
+1  3347					     ;jmp	     _sendg_loop
+1  3348	219C			     _g_send:
+1  3349	219C  B0 47			     mov	     al	, 47h
+1  3350	219E  E8 F558			     call    Out_chr
+1  3351	21A1  B0 39			     mov	     al	, 39h
+1  3352	21A3  E8 F553			     call    Out_chr
+1  3353	21A6  B0 39			     mov	     al	, 39h
+1  3354	21A8  E8 F54E			     call    Out_chr
+1  3355	21AB  BB 265Fr			     mov	     bx	, offset input_buff
+1  3356	21AE  B9 0064			     mov	     cx	, 100
+1  3357	21B1			     _sendg_loop:
+1  3358	21B1  51			     push    cx
+1  3359	21B2  AC			     lodsb
+1  3360	21B3  53			     push    bx
+1  3361	21B4			     _s_retry:
+1  3362	21B4  E8 F542			     call    Out_chr
+1  3363	21B7  72 FB			     jc		     _s_retry
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 60
+main.asm
+
+
+
+1  3364	21B9  5B			     pop	     bx
+1  3365	21BA  2E: C6 07	20		     mov	     cs:[bx] , byte ptr	20h
+1  3366	21BE  43			     inc	     bx
+1  3367	21BF  59			     pop	     cx
+1  3368	21C0  E2 EF			     loop    _sendg_loop
+1  3369	21C2  5F			     pop	     di
+1  3370	21C3  5E			     pop	     si
+1  3371	21C4  C6 06 26C3r 00 90		     mov	     input_length , 0
+1  3372	21CA  C6 06 265Cr 00 90		     mov	     push_was ,	0
+1  3373	21D0  C3			     ret
+1  3374	21D1			     endp    SengG
+1  3375
+1  3376
+   3377					       include lib/sertool.asm
+1  3378	21D1			     Print   proc
+1  3379	21D1  C6 06 1BB7r 00		     mov	     isFree , 0
+1  3380	21D6  56			     push    si
+1  3381	21D7  51			     push    cx
+1  3382	21D8  50			     push    ax
+1  3383	21D9  52			     push    dx
+1  3384	21DA  B0 43			     mov	     al	, 43h
+1  3385	21DC  E8 F9DA			     call    WriteInOutBuff
+1  3386	21DF  BE 06C6r			     mov	     si	, offset moves_buff
+1  3387	21E2  33 C9			     xor	     cx	, cx
+1  3388	21E4  8A 0E 078Er		     mov	     cl	, moves_count
+1  3389
+1  3390					     ;add	     cl	, cl
+1  3391
+1  3392	21E8  33 C0			     xor	     ax	, ax
+1  3393	21EA  8A C1			     mov	     al	, cl
+1  3394	21EC  B2 0A			     mov	     dl	, 10
+1  3395	21EE  F6 F2			     div	     dl
+1  3396	21F0  04 30			     add	     al	, 30h
+1  3397	21F2  E8 F9C4			     call    WriteInOutBuff
+1  3398	21F5  33 C0			     xor	     ax	, ax
+1  3399	21F7  8A C1			     mov	     al	, cl
+1  3400	21F9  F6 F2			     div	     dl
+1  3401	21FB  8A C4			     mov	     al	, ah
+1  3402	21FD  04 30			     add	     al	, 30h
+1  3403	21FF  E8 F9B7			     call    WriteInOutBuff
+1  3404
+1  3405					     ;shl	     cl	, 1
+1  3406
+1  3407	2202			     _print_loop:
+1  3408	2202  51			     push    cx
+1  3409	2203  AC			     lodsb
+1  3410	2204  8A D8			     mov	     bl	, al
+1  3411	2206  AC			     lodsb
+1  3412	2207  8A F8			     mov	     bh	, al
+1  3413	2209  E8 0017			     call    CastToDeskSymbols
+1  3414	220C  8A C3			     mov	     al	, bl
+1  3415	220E  E8 F9A8			     call    WriteInOutBuff
+1  3416	2211  8A C7			     mov	     al	, bh
+1  3417	2213  E8 F9A3			     call    WriteInOutBuff
+1  3418	2216  59			     pop	     cx
+1  3419	2217  E2 E9			     loop    _print_loop
+1  3420	2219  5A			     pop	     dx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 61
+main.asm
+
+
+
+1  3421	221A  58			     pop	     ax
+1  3422	221B  59			     pop	     cx
+1  3423	221C  5E			     pop	     si
+1  3424	221D  C6 06 1BB7r 01		     mov	     isFree , 1
+1  3425	2222  C3			     ret
+1  3426	2223			     endp    Print
+1  3427
+1  3428				     ;bx - coordinates in/out
+1  3429	2223			     CastToDeskSymbols	     proc
+1  3430	2223  52			     push    dx
+1  3431	2224  80 3E 2594r 01		     cmp	     color , 1
+1  3432	2229  74 0E			     je		     _ctds_white
+1  3433	222B  80 C7 31			     add	     bh	, 31h
+1  3434	222E  B2 07			     mov	     dl	, 7
+1  3435	2230  2A D3			     sub	     dl	, bl
+1  3436	2232  B3 41			     mov	     bl	, 41h
+1  3437	2234  02 DA			     add	     bl	, dl
+1  3438	2236  EB 0C 90			     jmp	     _ctds_quit
+1  3439	2239			     _ctds_white:
+1  3440	2239  80 C3 41			     add	     bl	, 41h
+1  3441	223C  B2 07			     mov	     dl	, 7
+1  3442	223E  2A D7			     sub	     dl	, bh
+1  3443	2240  B7 31			     mov	     bh	, 31h
+1  3444	2242  02 FA			     add	     bh	, dl
+1  3445	2244			     _ctds_quit:
+1  3446	2244  5A			     pop	     dx
+1  3447	2245  C3			     ret
+1  3448	2246			     endp    CastToDeskSymbols
+   3449					       include lib/bselect.asm
+1  3450	2246  0C*(????)		     MustSelectArray	     dw	     12	     dup(?)
+1  3451	225E  00		     MustSelectCount	     db	     0
+1  3452
+1  3453	225F  00		     j		     db		     0
+1  3454	2260  00		     legal   db		     0
+1  3455
+1  3456				     ;bx : bl -column ,	bh - row
+1  3457	2261			     CheckSelectLegal	     proc
+1  3458	2261  53			     push    bx
+1  3459	2262  C6 06 225Er 00		     mov	     MustSelectCount , 0
+1  3460	2267  C6 06 225Fr 00		     mov	     j , 0
+1  3461	226C  C6 06 2260r 01		     mov	     legal , 1
+1  3462	2271  E8 000C			     call    SelectLegal
+1  3463	2274  5B			     pop	     bx
+1  3464	2275  80 3E 225Er 00		     cmp	     MustSelectCount , 0
+1  3465	227A  74 03			     je		     _csl_quit
+1  3466	227C  E8 0089			     call    CheckElementContainsInArray
+1  3467	227F			     _csl_quit:
+1  3468	227F  C3			     ret
+1  3469	2280			     endp    CheckSelectLegal
+1  3470
+1  3471				     ;al - value of figure from	board
+1  3472	2280			     SelectLegal     proc
+1  3473	2280  56			     push    si
+1  3474	2281  50			     push    ax
+1  3475	2282  51			     push    cx
+1  3476	2283  B9 0040			     mov	     cx	, 64
+1  3477	2286			     _wsl_loop:
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 62
+main.asm
+
+
+
+1  3478	2286  51			     push    cx
+1  3479	2287  E8 0051			     call    JToBx
+1  3480	228A  E8 EF03			     call    GetElementFromBoard
+1  3481	228D  3C 00			     cmp	     al	, 0
+1  3482	228F  74 3F			     je		     _wsl_skip
+1  3483	2291  80 3E 0828r 01		     cmp	     procedure_color , 1
+1  3484	2296  74 0F			     je		     _wsl_white
+1  3485	2298  3C 01			     cmp	     al	, 1
+1  3486	229A  74 34			     je		     _wsl_skip
+1  3487	229C  3C 02			     cmp	     al	, 2
+1  3488	229E  74 30			     je		     _wsl_skip
+1  3489	22A0  3C 04			     cmp	     al	, 4
+1  3490	22A2  74 1F			     je		     _wsl_king
+1  3491	22A4  EB 0D 90			     jmp	     _wsl_checker
+1  3492	22A7			     _wsl_white:
+1  3493	22A7  3C 03			     cmp	     al	, 3
+1  3494	22A9  74 25			     je		     _wsl_skip
+1  3495	22AB  3C 04			     cmp	     al	, 4
+1  3496	22AD  74 21			     je		     _wsl_skip
+1  3497	22AF  3C 02			     cmp	     al	, 2
+1  3498	22B1  74 10			     je		     _wsl_king
+1  3499	22B3			     _wsl_checker:
+1  3500	22B3  E8 ECDD			     call    GetCheckerMoves
+1  3501	22B6  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  3502	22BB  74 13			     je		     _wsl_skip
+1  3503	22BD  E8 002D			     call    WriteMustSelectElement
+1  3504	22C0  EB 0E 90			     jmp	     _wsl_skip
+1  3505	22C3			     _wsl_king:
+1  3506	22C3  E8 E702			     call    GetKingMoves
+1  3507	22C6  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  3508	22CB  74 03			     je		     _wsl_skip
+1  3509	22CD  E8 001D			     call    WriteMustSelectElement
+1  3510	22D0			     _wsl_skip:
+1  3511	22D0  FE 06 225Fr		     inc	     j
+1  3512	22D4  59			     pop	     cx
+1  3513	22D5  E2 AF			     loop    _wsl_loop
+1  3514	22D7			     _wsl_quit:
+1  3515	22D7  59			     pop	     cx
+1  3516	22D8  58			     pop	     ax
+1  3517	22D9  5E			     pop	     si
+1  3518	22DA  C3			     ret
+1  3519	22DB			     endp    SelectLegal
+1  3520
+1  3521	22DB			     JToBx   proc
+1  3522	22DB  52			     push    dx
+1  3523	22DC  50			     push    ax
+1  3524	22DD  B2 08			     mov	     dl	, 8
+1  3525	22DF  33 C0			     xor	     ax	, ax
+1  3526	22E1  A0 225Fr			     mov	     al	, j
+1  3527	22E4  F6 F2			     div	     dl
+1  3528	22E6  8A DC			     mov	     bl	, ah
+1  3529	22E8  8A F8			     mov	     bh	, al
+1  3530	22EA  58			     pop	     ax
+1  3531	22EB  5A			     pop	     dx
+1  3532	22EC  C3			     ret
+1  3533	22ED			     endp    JToBx
+1  3534
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 63
+main.asm
+
+
+
+1  3535
+1  3536				     ;bx - value to write
+1  3537	22ED			     WriteMustSelectElement  proc
+1  3538	22ED  57			     push    di
+1  3539	22EE  50			     push    ax
+1  3540	22EF  BF 2246r			     mov	     di	, offset MustSelectArray
+1  3541	22F2  51			     push    cx
+1  3542	22F3  33 C9			     xor	     cx	, cx
+1  3543	22F5  8A 0E 225Er		     mov	     cl	, MustSelectCount
+1  3544	22F9  03 F9			     add	     di	, cx
+1  3545	22FB  03 F9			     add	     di	, cx
+1  3546	22FD  59			     pop	     cx
+1  3547	22FE  8B C3			     mov	     ax	, bx
+1  3548	2300  AB			     stosw
+1  3549	2301  FE 06 225Er		     inc	     MustSelectCount
+1  3550	2305  58			     pop	     ax
+1  3551	2306  5F			     pop	     di
+1  3552	2307  C3			     ret
+1  3553	2308			     endp    WriteMustSelectElement
+1  3554
+1  3555				     ;bx - element to check
+1  3556	2308			     CheckElementContainsInArray	     proc
+1  3557	2308  51			     push    cx
+1  3558	2309  56			     push    si
+1  3559	230A  33 C9			     xor	     cx	, cx
+1  3560	230C  8A 0E 225Er		     mov	     cl	, MustSelectCount
+1  3561	2310  80 F9 00			     cmp	     cl	, 0
+1  3562	2313  74 0A			     je		     _cecia_bad
+1  3563	2315  BE 2246r			     mov	     si	, offset MustSelectArray
+1  3564	2318			     _cecia_loop:
+1  3565	2318  AD			     lodsw
+1  3566	2319  3B C3			     cmp	     ax	, bx
+1  3567	231B  74 07			     je		     _cecia_quit
+1  3568	231D  E2 F9			     loop    _cecia_loop
+1  3569	231F			     _cecia_bad:
+1  3570	231F  C6 06 2260r 00		     mov	     legal , 0
+1  3571	2324			     _cecia_quit:
+1  3572	2324  5E			     pop	     si
+1  3573	2325  59			     pop	     cx
+1  3574	2326  C3			     ret
+1  3575	2327			     endp    CheckElementContainsInArray
+   3576					       include lib/statuses.asm
+1  3577	2327  45 6E 65 6D 79 20	77+  enemy_win_message db    'Enemy won	:($' ;length 12
+   3578	      6F 6E 20 3A 28 24
+1  3579	2334  49 20 57 69 6E 21	20+  i_win_message     db    'I	Win! :)$'   ;length 9
+   3580	      3A 29 24
+1  3581	233E  4D 79 20 6D 6F 76	65+  my_move_message	     db	     'My move$'
+   3582	      24
+1  3583	2346  57 61 69 74 69 6E	67+  enemy_move_message	     db	     'Waiting for enemy	move$'
+   3584	      20 66 6F 72 20 65	6E+
+   3585	      65 6D 79 20 6D 6F	76+
+   3586	      65 24
+1  3587	235D  45 72 72 6F 72 3A	20+  bad_move_message	     db	     'Error: bad move, my move$'
+   3588	      62 61 64 20 6D 6F	76+
+   3589	      65 2C 20 6D 79 20	6D+
+   3590	      6F 76 65 24
+1  3591	2376  57 61 69 74 69 6E	67+  waiting_move_message    db	     'Waiting for reply$'
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 64
+main.asm
+
+
+
+   3592	      20 66 6F 72 20 72	65+
+   3593	      70 6C 79 24
+1  3594	2388  45 72 72 6F 72 3A	20+  bad_enemy_move	     db	     'Error: bad move, en move$'
+   3595	      62 61 64 20 6D 6F	76+
+   3596	      65 2C 20 65 6E 20	6D+
+   3597	      6F 76 65 24
+1  3598
+1  3599	23A1			     PrintBadEnemyMove proc
+1  3600	23A1  52			     push    dx
+1  3601	23A2  BA 2388r			     mov	     dx	, offset bad_enemy_move
+1  3602	23A5  E8 0056			     call    PrintStatus
+1  3603	23A8  5A			     pop	     dx
+1  3604	23A9  C3			     ret
+1  3605	23AA			     endp	     PrintBadEnemyMove
+1  3606
+1  3607	23AA			     PrintWaiting	     proc
+1  3608	23AA  52			     push    dx
+1  3609	23AB  BA 2376r			     mov	     dx	, offset waiting_move_message
+1  3610	23AE  E8 004D			     call    PrintStatus
+1  3611	23B1  5A			     pop	     dx
+1  3612	23B2  C3			     ret
+1  3613	23B3			     endp	     PrintWaiting
+1  3614
+1  3615	23B3			     PrintBadMove	     proc
+1  3616	23B3  52			     push    dx
+1  3617	23B4  BA 235Dr			     mov	     dx	, offset bad_move_message
+1  3618	23B7  E8 0044			     call    PrintStatus
+1  3619	23BA  5A			     pop	     dx
+1  3620	23BB  C3			     ret
+1  3621	23BC			     endp	     PrintBadMove
+1  3622
+1  3623	23BC			     PrintEnemyMove	     proc
+1  3624	23BC  52			     push    dx
+1  3625	23BD  BA 2346r			     mov	     dx	, offset enemy_move_message
+1  3626	23C0  E8 003B			     call    PrintStatus
+1  3627	23C3  5A			     pop	     dx
+1  3628	23C4  C3			     ret
+1  3629	23C5			     endp	     PrintEnemyMove
+1  3630
+1  3631	23C5			     PrintMyMove	     proc
+1  3632	23C5  52			     push    dx
+1  3633	23C6  BA 233Er			     mov	     dx	, offset my_move_message
+1  3634	23C9  E8 0032			     call    PrintStatus
+1  3635	23CC  5A			     pop	     dx
+1  3636	23CD  C3			     ret
+1  3637	23CE			     endp	     PrintMyMove
+1  3638
+1  3639	23CE			     PrintEnemyWin	     proc
+1  3640	23CE  52			     push    dx
+1  3641	23CF  BA 2327r			     mov	     dx	, offset enemy_win_message
+1  3642	23D2  E8 0029			     call    PrintStatus
+1  3643	23D5  5A			     pop	     dx
+1  3644	23D6  C3			     ret
+1  3645	23D7			     endp	     PrintEnemyWin
+1  3646
+1  3647	23D7			     PrintIwin	     proc
+1  3648	23D7  52			     push    dx
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 65
+main.asm
+
+
+
+1  3649	23D8  BA 2334r			     mov	     dx	, offset i_win_message
+1  3650	23DB  E8 0020			     call    PrintStatus
+1  3651	23DE  5A			     pop	     dx
+1  3652	23DF  C3			     ret
+1  3653	23E0			     endp    PrintIwin
+1  3654
+1  3655	23E0			     Clean	     proc
+1  3656	23E0  50			     push    ax
+1  3657	23E1  53			     push    bx
+1  3658	23E2  52			     push    dx
+1  3659	23E3  51			     push    cx
+1  3660	23E4  B4 02			     mov	     ah	, 02h
+1  3661	23E6  B7 00			     mov	     bh	, 0
+1  3662	23E8  B6 18			     mov	     dh	, 18h
+1  3663	23EA  B2 27			     mov	     dl	, 27h
+1  3664	23EC  CD 10			     int	     10h
+1  3665	23EE  B9 0018			     mov	     cx	, 24
+1  3666	23F1  B4 02			     mov	     ah	, 02h
+1  3667	23F3  B2 20			     mov	     dl	, 20h
+1  3668	23F5			     _clean_loop:
+1  3669	23F5  CD 21			     int	     21h
+1  3670	23F7  E2 FC			     loop    _clean_loop
+1  3671	23F9  59			     pop	     cx
+1  3672	23FA  5A			     pop	     dx
+1  3673	23FB  5B			     pop	     bx
+1  3674	23FC  58			     pop	     ax
+1  3675	23FD  C3			     ret
+1  3676	23FE			     endp	     Clean
+1  3677
+1  3678				     ;dx - offset of message To	Print
+1  3679	23FE			     PrintStatus     proc
+1  3680	23FE  50			     push    ax
+1  3681	23FF  53			     push    bx
+1  3682	2400  52			     push    dx
+1  3683	2401  51			     push    cx
+1  3684
+1  3685	2402  E8 FFDB			     call    Clean
+1  3686	2405  52			     push    dx
+1  3687	2406  B4 02			     mov	     ah	, 02h
+1  3688	2408  B7 00			     mov	     bh	, 0
+1  3689	240A  B6 18			     mov	     dh	, 18h
+1  3690	240C  B2 27			     mov	     dl	, 27h
+1  3691	240E  CD 10			     int	     10h
+1  3692	2410  5A			     pop	     dx
+1  3693	2411  B4 09			     mov	     ah	, 09h
+1  3694	2413  CD 21			     int	     21h
+1  3695
+1  3696	2415  59			     pop	     cx
+1  3697	2416  5A			     pop	     dx
+1  3698	2417  5B			     pop	     bx
+1  3699	2418  58			     pop	     ax
+1  3700	2419  C3			     ret
+1  3701	241A			     endp    PrintStatus
+1  3702
+   3703					       include lib/checker/ch.asm
+1  3704	241A  00		     chints_show     db	     0
+1  3705
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 66
+main.asm
+
+
+
+1  3706	241B			     ShowCheckerHints	     proc
+1  3707	241B  50			     push    ax
+1  3708	241C  53			     push    bx
+1  3709	241D  51			     push    cx
+1  3710	241E  56			     push    si
+1  3711	241F  A0 2594r			     mov	     al	, color
+1  3712	2422  3A 06 0828r		     cmp	     al	, procedure_color
+1  3713	2426  75 4F			     jne	     _scs_quit
+1  3714	2428  B9 0000			     mov	     cx	, 0
+1  3715	242B  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  3716	2430  75 0A			     jne	     _scs_must
+1  3717	2432  80 3E 0F77r 00		     cmp	     CheckerMovesCount , 0
+1  3718	2437  75 0D			     jne	     _scs_moves
+1  3719	2439  EB 3C 90			     jmp	     _scs_quit
+1  3720	243C			     _scs_must:
+1  3721	243C  BE 0F78r			     mov	     si	, offset CheckerMustMoves
+1  3722	243F  8A 0E 0F80r		     mov	     cl	, CheckerMustMovesCount
+1  3723	2443  EB 08 90			     jmp	     _scs_draw
+1  3724	2446			     _scs_moves:
+1  3725	2446  BE 0F73r			     mov	     si	, offset CheckerMoves
+1  3726	2449  8A 0E 0F77r		     mov	     cl	, CheckerMovesCount
+1  3727	244D			     _scs_draw:
+1  3728	244D  51			     push    cx
+1  3729	244E  AD			     lodsw
+1  3730	244F  8B D8			     mov	     bx	, ax
+1  3731	2451  E8 ED60			     call    GetCoordinates
+1  3732	2454  89 0E 02D6r		     mov	     x0	, cx
+1  3733	2458  89 16 02D8r		     mov	     y0	, dx
+1  3734	245C  83 06 02D6r 14		     add	     x0	, 20
+1  3735	2461  83 06 02D8r 14		     add	     y0	, 20
+1  3736	2466  A0 2595r			     mov	     al	, my_color
+1  3737	2469  A2 02DEr			     mov	     figure_color , al
+1  3738	246C  E8 DF02			     call    DrawOkr
+1  3739	246F  59			     pop	     cx
+1  3740	2470  E2 DB			     loop    _scs_draw
+1  3741	2472  C6 06 241Ar 01		     mov	     chints_show , 1
+1  3742	2477			     _scs_quit:
+1  3743	2477  5E			     pop	     si
+1  3744	2478  59			     pop	     cx
+1  3745	2479  5B			     pop	     bx
+1  3746	247A  58			     pop	     ax
+1  3747	247B  C3			     ret
+1  3748	247C			     endp    ShowCheckerHints
+1  3749
+1  3750	247C			     HideCheckerHints	     proc
+1  3751	247C  50			     push    ax
+1  3752	247D  53			     push    bx
+1  3753	247E  51			     push    cx
+1  3754	247F  56			     push    si
+1  3755	2480  B9 0000			     mov	     cx	, 0
+1  3756	2483  80 3E 0F80r 00		     cmp	     CheckerMustMovesCount , 0
+1  3757	2488  75 16			     jne	     _hch_moves
+1  3758	248A  80 3E 0F77r 00		     cmp	     CheckerMovesCount , 0
+1  3759	248F  75 0F			     jne	     _hch_moves
+1  3760	2491  EB 3F 90			     jmp	     _hch_quit
+1  3761	2494			     _hch_must:
+1  3762	2494  BE 0F78r			     mov	     si	, offset CheckerMustMoves
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 67
+main.asm
+
+
+
+1  3763	2497  33 C9			     xor	     cx	, cx
+1  3764	2499  8A 0E 0F80r		     mov	     cl	, CheckerMustMovesCount
+1  3765	249D  EB 0A 90			     jmp	     _hch_draw
+1  3766	24A0			     _hch_moves:
+1  3767	24A0  BE 0F73r			     mov	     si	, offset CheckerMoves
+1  3768	24A3  33 C9			     xor	     cx	, cx
+1  3769	24A5  8A 0E 0F77r		     mov	     cl	, CheckerMovesCount
+1  3770	24A9			     _hch_draw:
+1  3771	24A9  51			     push    cx
+1  3772	24AA  AD			     lodsw
+1  3773	24AB  8B D8			     mov	     bx	, ax
+1  3774	24AD  E8 ED04			     call    GetCoordinates
+1  3775	24B0  89 0E 02D6r		     mov	     x0	, cx
+1  3776	24B4  89 16 02D8r		     mov	     y0	, dx
+1  3777	24B8  83 06 02D6r 14		     add	     x0	, 20
+1  3778	24BD  83 06 02D8r 14		     add	     y0	, 20
+1  3779	24C2  C6 06 02DEr 00		     mov	     figure_color , 0
+1  3780	24C7  E8 DEA7			     call    DrawOkr
+1  3781	24CA  59			     pop	     cx
+1  3782	24CB  E2 DC			     loop    _hch_draw
+1  3783	24CD  C6 06 241Ar 00		     mov	     chints_show , 0
+1  3784	24D2			     _hch_quit:
+1  3785	24D2  5E			     pop	     si
+1  3786	24D3  59			     pop	     cx
+1  3787	24D4  5B			     pop	     bx
+1  3788	24D5  58			     pop	     ax
+1  3789	24D6  C3			     ret
+1  3790	24D7			     endp    HideCheckerHints
+   3791					       include lib/king/kh.asm
+1  3792	24D7  00		     khints_show     db	     0
+1  3793
+1  3794	24D8			     ShowKingHints   proc
+1  3795	24D8  50			     push    ax
+1  3796	24D9  53			     push    bx
+1  3797	24DA  51			     push    cx
+1  3798	24DB  56			     push    si
+1  3799	24DC  A0 2594r			     mov	     al	, color
+1  3800	24DF  3A 06 0828r		     cmp	     al	, procedure_color
+1  3801	24E3  75 4F			     jne	     _skh_quit
+1  3802	24E5  B9 0000			     mov	     cx	, 0
+1  3803	24E8  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  3804	24ED  75 0A			     jne	     _skh_must
+1  3805	24EF  80 3E 0953r 00		     cmp	     KingMovesCount , 0
+1  3806	24F4  75 0D			     jne	     _skh_moves
+1  3807	24F6  EB 3C 90			     jmp	     _skh_quit
+1  3808	24F9			     _skh_must:
+1  3809	24F9  BE 0954r			     mov	     si	, offset KingMustMoves
+1  3810	24FC  8A 0E 097Cr		     mov	     cl	, KingMustMovesCount
+1  3811	2500  EB 08 90			     jmp	     _skh_draw
+1  3812	2503			     _skh_moves:
+1  3813	2503  BE 092Br			     mov	     si	, offset KingMoves
+1  3814	2506  8A 0E 0953r		     mov	     cl	, KingMovesCount
+1  3815	250A			     _skh_draw:
+1  3816	250A  51			     push    cx
+1  3817	250B  AD			     lodsw
+1  3818	250C  8B D8			     mov	     bx	, ax
+1  3819	250E  E8 ECA3			     call    GetCoordinates
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 68
+main.asm
+
+
+
+1  3820	2511  89 0E 02D6r		     mov	     x0	, cx
+1  3821	2515  89 16 02D8r		     mov	     y0	, dx
+1  3822	2519  83 06 02D6r 14		     add	     x0	, 20
+1  3823	251E  83 06 02D8r 14		     add	     y0	, 20
+1  3824	2523  A0 2595r			     mov	     al	, my_color
+1  3825	2526  A2 02DEr			     mov	     figure_color , al
+1  3826	2529  E8 DE45			     call    DrawOkr
+1  3827	252C  59			     pop	     cx
+1  3828	252D  E2 DB			     loop    _skh_draw
+1  3829	252F  C6 06 24D7r 01		     mov	     khints_show , 1
+1  3830	2534			     _skh_quit:
+1  3831	2534  5E			     pop	     si
+1  3832	2535  59			     pop	     cx
+1  3833	2536  5B			     pop	     bx
+1  3834	2537  58			     pop	     ax
+1  3835	2538  C3			     ret
+1  3836	2539			     endp    ShowKingHints
+1  3837
+1  3838	2539			     HideKingHints   proc
+1  3839	2539  50			     push    ax
+1  3840	253A  53			     push    bx
+1  3841	253B  51			     push    cx
+1  3842	253C  56			     push    si
+1  3843	253D  B9 0000			     mov	     cx	, 0
+1  3844	2540  80 3E 097Cr 00		     cmp	     KingMustMovesCount	, 0
+1  3845	2545  75 16			     jne	     _hkh_moves
+1  3846	2547  80 3E 0953r 00		     cmp	     KingMovesCount , 0
+1  3847	254C  75 0F			     jne	     _hkh_moves
+1  3848	254E  EB 3F 90			     jmp	     _hkh_quit
+1  3849	2551			     _hkh_must:
+1  3850	2551  BE 0954r			     mov	     si	, offset KingMustMoves
+1  3851	2554  33 C9			     xor	     cx	, cx
+1  3852	2556  8A 0E 097Cr		     mov	     cl	, KingMustMovesCount
+1  3853	255A  EB 0A 90			     jmp	     _hkh_draw
+1  3854	255D			     _hkh_moves:
+1  3855	255D  BE 092Br			     mov	     si	, offset KingMoves
+1  3856	2560  33 C9			     xor	     cx	, cx
+1  3857	2562  8A 0E 0953r		     mov	     cl	, KingMovesCount
+1  3858	2566			     _hkh_draw:
+1  3859	2566  51			     push    cx
+1  3860	2567  AD			     lodsw
+1  3861	2568  8B D8			     mov	     bx	, ax
+1  3862	256A  E8 EC47			     call    GetCoordinates
+1  3863	256D  89 0E 02D6r		     mov	     x0	, cx
+1  3864	2571  89 16 02D8r		     mov	     y0	, dx
+1  3865	2575  83 06 02D6r 14		     add	     x0	, 20
+1  3866	257A  83 06 02D8r 14		     add	     y0	, 20
+1  3867	257F  C6 06 02DEr 00		     mov	     figure_color , 0
+1  3868	2584  E8 DDEA			     call    DrawOkr
+1  3869	2587  59			     pop	     cx
+1  3870	2588  E2 DC			     loop    _hkh_draw
+1  3871	258A  C6 06 24D7r 00		     mov	     khints_show , 0
+1  3872	258F			     _hkh_quit:
+1  3873	258F  5E			     pop	     si
+1  3874	2590  59			     pop	     cx
+1  3875	2591  5B			     pop	     bx
+1  3876	2592  58			     pop	     ax
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 69
+main.asm
+
+
+
+1  3877	2593  C3			     ret
+1  3878	2594			     endp    HideKingHints
+   3879	2594  ??			   color	     db	     ?
+   3880	2595  ??			   my_color  db	     ?
+   3881	2596  ??			   enemy_color	     db	     ?
+   3882	2597  00			       flag	     db	     0
+   3883	2598  00			       gameEnd	     db	     0
+   3884	2599  00			       IWin	     db	     0
+   3885	259A			     _main:
+   3886	259A  80 3E 2598r 01		     cmp	     gameEnd , 1
+   3887	259F  75 03			     jne	     _main_cont
+   3888	25A1  E9 00AE			     jmp	     _quit
+   3889	25A4			     _main_cont:
+   3890	25A4  C6 06 1BB7r 00		     mov	     isFree , 0
+   3891	25A9  33 C9			     xor	     cx	, cx
+   3892	25AB  8A 0E 1BB8r		     mov	     cl	, OutCount
+   3893	25AF  80 F9 00			     cmp	     cl	, 0
+   3894	25B2  74 0A			     je		     _end_write
+   3895	25B4			      _write:
+   3896	25B4  51			     push    cx
+   3897	25B5  E8 F628			     call    ReadFromOutBuff
+   3898	25B8  E8 F13E			     call    Out_Chr
+   3899	25BB  59			     pop	     cx
+   3900	25BC  E2 F6			     loop    _write
+   3901	25BE			      _end_write:
+   3902	25BE  C6 06 1BB7r 01		      mov	     isFree , 1
+   3903	25C3			      _read:
+   3904	25C3  E8 F15A			      call   Get_Chr
+   3905	25C6  72 05			      jb	     _end_read
+   3906	25C8  E8 F636			      call   HandleCommands
+   3907	25CB  EB F6			      jmp    _read
+   3908	25CD			      _end_read:
+   3909	25CD  80 3E 04C5r 01		     cmp	     click , 1
+   3910	25D2  75 1A			     jne	     _c2
+   3911	25D4  80 3E 1F9Er 01		     cmp	     e_recieved	, 1
+   3912	25D9  75 0B			     jne	     _c_f
+   3913	25DB  E8 F9F1			     call    ChangeSide
+   3914	25DE  C6 06 1F9Er 00		     mov	     e_recieved	, 0
+   3915	25E3  EB 18 90			     jmp	     _c3
+   3916	25E6			     _c_f:
+   3917	25E6  E8 DEEC			     call    CheckMouseCoordinates
+   3918	25E9  C6 06 04C5r 00		     mov	     click , 0
+   3919	25EE			     _c2:
+   3920	25EE  80 3E 04C7r 01		     cmp	     cancel , 1
+   3921	25F3  75 08			     jne	     _c3
+   3922	25F5  E8 E1BC			     call    CancelAllActions
+   3923	25F8  C6 06 04C7r 00		     mov	     cancel , 0
+   3924	25FD			     _c3:
+   3925	25FD  80 3E 04C6r 01		     cmp	     exit , 1
+   3926	2602  74 4E			     je		     _quit
+   3927	2604			     _c4:
+   3928	2604  B4 01			     mov     ah, 1
+   3929	2606  CD 16			     int     16h
+   3930	2608  74 90			     jz		     _main
+   3931	260A  32 E4			     xor	     ah, ah
+   3932	260C  CD 16			     int     16h
+   3933	260E  80 FC 01			     cmp     ah, 1
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 70
+main.asm
+
+
+
+   3934	2611  75 0B			     jne	     _c5
+   3935	2613  E8 0152			     call    StartNewGame
+   3936	2616  C6 06 1C5Fr 00		     mov	     SendedB , 0
+   3937	261B  E9 FF7C			     jmp	     _main
+   3938	261E			     _c5:
+   3939	261E  80 FC 0F			     cmp	     ah	, 0fh
+   3940	2621  74 E1			     je		     _c4
+   3941	2623  80 3E 265Cr 00		     cmp	     push_was ,	0
+   3942	2628  75 23			     jne	     _c5_push
+   3943	262A  50			     push    ax
+   3944	262B  B4 02			     mov	     ah	, 02h
+   3945	262D  B7 00			     mov	     bh	, 0
+   3946	262F  B2 2C			     mov	     dl	, 02ch
+   3947	2631  B6 14			     mov	     dh	, 20
+   3948	2633  CD 10			     int	     10h
+   3949	2635  C6 06 265Dr 14 90		     mov	     row_curr ,	20
+   3950	263B  C6 06 265Er 2C 90		     mov	     column_curr     , 02ch
+   3951	2641  C6 06 265Cr 01 90		     mov	     push_was ,	1
+   3952	2647  B6 14			     mov	     dh	, 20
+   3953	2649  E8 FB1D			     call    ClearPreviousMessage
+   3954	264C  58			     pop	     ax
+   3955	264D			     _c5_push:
+   3956	264D  E8 0074			     call    ProcessPush
+   3957	2650  EB B2			     jmp	     _c4
+   3958	2652			     _quit:
+   3959	2652  E8 F10C			     call    DisableTimerHandler
+   3960	2655  E8 EFD4			     call    Ser_Rst
+   3961	2658  E8 DEF6			     call    DisableHandler
+   3962				     ;max length of message 36 symbols
+   3963	265B  C3		     ret
+   3964
+   3965	265C  00		     push_was	     db	     0
+   3966
+   3967	265D  00		     row_curr	     db	     0
+   3968	265E  00		     column_curr     db	     0
+   3969	265F  64*(20)		     input_buff	     db	     100     dup     (20h)
+   3970	26C3  00		     input_length    db	     0
+   3971
+   3972	26C4			     ProcessPush     proc
+   3973	26C4  80 FC 1C			     cmp	     ah	, 1ch
+   3974	26C7  75 06			     jne	     _read_pp
+   3975	26C9  E8 FACB			     call    SengG
+   3976	26CC  E9 0098			     jmp	     _pp_quit
+   3977	26CF			     _read_pp:
+   3978	26CF  80 FC 0E			     cmp	     ah	, 0eh
+   3979	26D2  74 4C			     je		     _pp_backspace
+   3980	26D4  80 3E 26C3r 63		     cmp	     input_length , 99
+   3981	26D9  75 01			     jne	     _read_cont
+   3982	26DB  C3			     ret
+   3983	26DC			     _read_cont:
+   3984	26DC  80 3E 265Er 4F		     cmp	     column_curr , 4fh
+   3985	26E1  75 09			     jne	     _pp_row_not_inc
+   3986	26E3  C6 06 265Er 2C		     mov	     column_curr , 02ch
+   3987	26E8  FE 06 265Dr		     inc	     row_curr
+   3988	26EC			     _pp_row_not_inc:
+   3989	26EC  FE 06 265Er		     inc	     column_curr
+   3990	26F0  B4 02			     mov	     ah	, 02h
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 71
+main.asm
+
+
+
+   3991	26F2  B7 00			     mov	     bh	, 0
+   3992	26F4  8A 36 265Dr		     mov	     dh	 , row_curr
+   3993	26F8  8A 16 265Er		     mov	     dl	 , column_curr
+   3994	26FC  CD 10			     int	     10h
+   3995
+   3996	26FE  BB 265Fr			     mov	     bx	, offset input_buff
+   3997	2701  33 C9			     xor	     cx	, cx
+   3998	2703  8A 0E 26C3r		     mov	     cl	, input_length
+   3999	2707  03 D9			     add	     bx	, cx
+   4000	2709  2E: 88 07			     mov	     cs:[bx] , al
+   4001	270C  FE 06 26C3r		     inc	     input_length
+   4002	2710  B4 09			     mov	     ah	, 09h
+   4003	2712  B7 00			     mov	     bh	, 0
+   4004	2714  8A 1E 2595r		     mov	     bl	, my_color
+   4005	2718  B9 0001			     mov	     cx	, 1
+   4006	271B  CD 10			     int	     10h
+   4007
+   4008	271D  EB 48 90			     jmp	     _pp_quit
+   4009	2720			     _pp_backspace:
+   4010	2720  80 3E 26C3r 00		     cmp	     input_length , 0
+   4011	2725  74 40			     je		     _pp_quit
+   4012	2727  BB 265Fr			     mov	     bx	, offset input_buff
+   4013	272A  33 C9			     xor	     cx	, cx
+   4014	272C  8A 0E 26C3r		     mov	     cl	, input_length
+   4015	2730  FE 0E 26C3r		     dec	     input_length
+   4016	2734  03 D9			     add	     bx	, cx
+   4017	2736  2E: C6 07	20		     mov	     cs:[bx] , byte ptr	20h
+   4018	273A  80 3E 265Er 2C		     cmp	     column_curr , 02ch
+   4019	273F  75 09			     jne	     _pp_row_not_decr
+   4020	2741  C6 06 265Er 50		     mov	     column_curr , 050h
+   4021	2746  FE 0E 265Dr		     dec	     row_curr
+   4022	274A			     _pp_row_not_decr:
+   4023	274A  B4 02			     mov	     ah	, 02h
+   4024	274C  B7 00			     mov	     bh	, 0
+   4025	274E  8A 36 265Dr		     mov	     dh	, row_curr
+   4026	2752  8A 16 265Er		     mov	     dl	, column_curr
+   4027	2756  CD 10			     int	     10h
+   4028	2758  FE 0E 265Er		     dec	     column_curr
+   4029	275C  B4 09			     mov	     ah	, 09h
+   4030	275E  B0 20			     mov	     al	, 20h
+   4031	2760  B7 00			     mov	     bh	, 0
+   4032	2762  B9 0001			     mov	     cx	, 1
+   4033	2765  CD 10			     int	     10h
+   4034	2767			     _pp_quit:
+   4035	2767  C3			     ret
+   4036	2768			     endp    ProcessPush
+   4037
+   4038
+   4039	2768			     StartNewGame    proc
+   4040	2768  E8 E9F4			     call    CopyDumpDeskToDeskWhite
+   4041	276B  E8 E9FB			     call    CopyDumpDeskToDeskBlack
+   4042	276E  C6 06 1F9Fr 00		     mov	     GameOver ,	0
+   4043	2773  C6 06 1F9Er 00		     mov	     e_recieved	, 0
+   4044	2778  C6 06 0795r 0C		     mov	     black_count , 12
+   4045	277D  C6 06 0796r 0C		     mov	     white_count , 12
+   4046	2782  C6 06 06C5r 00		     mov	     isSelected	, 0
+   4047	2787  C6 06 1C60r 00		     mov	     ColorSelected , 0
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 72
+main.asm
+
+
+
+   4048	278C  C7 06 0181r 0001		     mov	     x_off , 1
+   4049	2792  C7 06 0183r 0001		     mov	     y_off , 1
+   4050	2798  E8 D9EA			     call    print_desk
+   4051	279B  C7 06 0181r 0001		     mov	     x_off , 1
+   4052	27A1  C7 06 0183r 0001		     mov	     y_off , 1
+   4053	27A7  E8 D9DB			     call    print_desk
+   4054	27AA  C3			     ret
+   4055	27AB			     endp    StartNewGame
+   4056
+   4057				     end start
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 73
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "12/04/12"
+??FILENAME			  Text	 "main	  "
+??TIME				  Text	 "19:40:32"
+??VERSION			  Number 030A
+@32BIT				  Text	 0
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0707H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 MAIN
+@INTERFACE			  Text	 00H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+ACTIVE_DESK			  Byte	 DGROUP:0682
+ADDMOVE				  Near	 DGROUP:0B73
+ADDMUSTMOVE			  Near	 DGROUP:0B86
+ALERT				  Near	 DGROUP:08C6
+BADCOMMAND			  Near	 DGROUP:1EF8
+BAD_ENEMY_MOVE			  Byte	 DGROUP:2388
+BAD_MOVE_MESSAGE		  Byte	 DGROUP:235D
+BLACK_COUNT			  Byte	 DGROUP:0795
+BLACK_DESK			  Byte	 DGROUP:0602
+BLACK_DESK_DUMP			  Byte	 DGROUP:0642
+BLACK_LETTERS			  Byte	 DGROUP:029F
+BLACK_NUMBERS			  Byte	 DGROUP:0297
+BLACK_OFFSETS			  Byte	 DGROUP:017F
+BOTTOM_SIDE			  Byte	 DGROUP:20CC
+BOUNDS_OK			  Byte	 DGROUP:0A5E
+BUTTON_BORDER_COLOR		  Byte	 DGROUP:0235
+CANCEL				  Byte	 DGROUP:04C7
+CANCELALLACTIONS		  Near	 DGROUP:07B4
+CASTTODESKSYMBOLS		  Near	 DGROUP:2223
+CCICLE				  Near	 DGROUP:03D0
+CELL_VALUE			  Byte	 DGROUP:0827
+CHANGESIDE			  Near	 DGROUP:1FCF
+CHECKBOUNDS			  Near	 DGROUP:0AF1
+CHECKBYCOLOR			  Near	 DGROUP:0FB8
+CHECKELEMENTCOLOR		  Near	 DGROUP:0B49
+CHECKELEMENTCONTAINSINARRAY	  Near	 DGROUP:2308
+CHECKENEMYCOMMAND		  Near	 DGROUP:1DE9
+CHECKENEMYWIN			  Near	 DGROUP:1EA9
+CHECKERENEMY			  Word	 DGROUP:0F81
+CHECKERENEMYCOUNT		  Word	 DGROUP:0F89
+CHECKERFARSHIFTS		  Byte	 DGROUP:0F8B
+CHECKERISSELECTABLE		  Near	 DGROUP:0F57
+CHECKERMOVES			  Word	 DGROUP:0F73
+CHECKERMOVESCOUNT		  Byte	 DGROUP:0F77
+CHECKERMUSTMOVES		  Word	 DGROUP:0F78
+CHECKERMUSTMOVESCOUNT		  Byte	 DGROUP:0F80
+CHECKERSELECT			  Near	 DGROUP:0F3A
+CHECKIAMWIN			  Near	 DGROUP:1DB0
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 74
+Symbol Table
+
+
+
+CHECKIFENEMYWON			  Near	 DGROUP:1F63
+CHECKISKING			  Near	 DGROUP:0E02
+CHECKISMOVERIGHT		  Near	 DGROUP:0D39
+CHECKMOUSECOORDINATES		  Near	 DGROUP:04D5
+CHECKSELECTLEGAL		  Near	 DGROUP:2261
+CHINTS_SHOW			  Byte	 DGROUP:241A
+CLEAN				  Near	 DGROUP:23E0
+CLEARPREVIOUSMESSAGE		  Near	 DGROUP:2169
+CLICK				  Byte	 DGROUP:04C5
+COLOR				  Byte	 DGROUP:2594
+COLORSELECTED			  Byte	 DGROUP:1C60
+COLUMN				  Byte	 DGROUP:04CD
+COLUMN_CURR			  Byte	 DGROUP:265E
+COMMANDISGOOD			  Byte	 DGROUP:1DE8
+CONTINUELONGMOVE		  Near	 DGROUP:0E7F
+COPY				  Near	 DGROUP:1173
+COPYACTIVEDESKTODESK		  Near	 DGROUP:112C
+COPYDESKTOACTIVEDESK		  Near	 DGROUP:1154
+COPYDUMPDESKTODESKBLACK		  Near	 DGROUP:1169
+COPYDUMPDESKTODESKWHITE		  Near	 DGROUP:115F
+COUNT				  Word	 DGROUP:1622
+DELETEKINGPREVIOUSPLACE		  Near	 DGROUP:0C71
+DELTA				  Word	 DGROUP:02DA
+DESK_OFFSET			  Word	 DGROUP:06C2
+DESTROYENEMY			  Near	 DGROUP:0EA8
+DISABLEHANDLER			  Near	 DGROUP:0551
+DISABLETIMERHANDLER		  Near	 DGROUP:1761
+DISCONNECT_TIMER		  Byte	 DGROUP:1748
+DRAWCIRCLE			  Near	 DGROUP:03A6
+DRAWFIGURE			  Near	 DGROUP:0387
+DRAWFIGURES			  Near	 DGROUP:02DF
+DRAWOKR				  Near	 DGROUP:0371
+DRAW_BORDER			  Near	 DGROUP:01A0
+DRAW_EXIT_BUTTON		  Near	 DGROUP:01D9
+DRAW_HOR_LINE			  Near	 DGROUP:02C0
+DRAW_VER_LINE			  Near	 DGROUP:02AF
+ENEMIESDESTROYED		  Byte	 DGROUP:0D38
+ENEMYCOORDINATES		  Word	 DGROUP:09F9
+ENEMY_CELL			  Word	 DGROUP:0FDD
+ENEMY_COLOR			  Byte	 DGROUP:2596
+ENEMY_MOVE_MESSAGE		  Byte	 DGROUP:2346
+ENEMY_NAME			  Byte	 DGROUP:2050
+ENEMY_WIN_MESSAGE		  Byte	 DGROUP:2327
+EROR				  Word	 DGROUP:02D0
+EXIT				  Byte	 DGROUP:04C6
+EXITIFNOMOUSEAVAILABLE		  Near	 DGROUP:051E
+EXIT_STRING			  Byte	 DGROUP:01D5
+E_RECIEVED			  Byte	 DGROUP:1F9E
+FIGURE_COLOR			  Byte	 DGROUP:02DE
+FIGURE_COLUMN			  Byte	 DGROUP:0790
+FIGURE_ROW			  Byte	 DGROUP:078F
+FIGURE_VALUE			  Byte	 DGROUP:0791
+FINALLY				  Near	 DGROUP:03CF
+FINISHLONGMOVE			  Near	 DGROUP:0E56
+FLAG				  Byte	 DGROUP:2597
+FONT_COLOR			  Byte	 DGROUP:0236
+GAMECOUNT			  Byte	 DGROUP:0799
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 75
+Symbol Table
+
+
+
+GAMEEND				  Byte	 DGROUP:2598
+GAMEFINISHED			  Byte	 DGROUP:0798
+GAMEOVER			  Byte	 DGROUP:1F9F
+GAMESTART			  Byte	 DGROUP:1773
+GCFM_BAD			  Byte	 DGROUP:0FB7
+GETCELLNUMBER			  Near	 DGROUP:04CE
+GETCHECKERFARMOVES		  Near	 DGROUP:0FDF
+GETCHECKERMOVES			  Near	 DGROUP:0F93
+GETCHECKERNEARMOVES		  Near	 DGROUP:1042
+GETCOORDINATES			  Near	 DGROUP:11B4
+GETELEMENTFROMBOARD		  Near	 DGROUP:1190
+GETFIGURECOLOR			  Near	 DGROUP:0F22
+GETKINGMOVES			  Near	 DGROUP:09C8
+GETRANDOM			  Near	 DGROUP:1D2D
+GETSYMBOL			  Near	 DGROUP:1EF2
+GET_CHR				  Near	 DGROUP:1720
+GOODCOMMAND			  Near	 DGROUP:1F0F
+HANDLEA				  Near	 DGROUP:1C47
+HANDLEB				  Near	 DGROUP:1C62
+HANDLEC				  Near	 DGROUP:1D42
+HANDLECELL			  Near	 DGROUP:07F3
+HANDLECHECKERMOVE		  Near	 DGROUP:0D55
+HANDLECOMMANDS			  Near	 DGROUP:1C01
+HANDLED				  Near	 DGROUP:1F26
+HANDLEE				  Near	 DGROUP:1FA0
+HANDLEG				  Near	 DGROUP:20CE
+HANDLEKINGMOVE			  Near	 DGROUP:0BF4
+HANDLEMOVE			  Near	 DGROUP:08D1
+HANDLEN				  Near	 DGROUP:205D
+HANDLESELECT			  Near	 DGROUP:0829
+HEAD_BUFF			  Word	 DGROUP:1BB3
+HELP				  Near	 DGROUP:0D21
+HIDECHECKERHINTS		  Near	 DGROUP:247C
+HIDECURSOR			  Near	 DGROUP:0537
+HIDEKINGHINTS			  Near	 DGROUP:2539
+INPUT_BUFF			  Byte	 DGROUP:265F
+INPUT_LENGTH			  Byte	 DGROUP:26C3
+INT_RET				  Near	 DGROUP:16F5
+INT_STS				  Byte	 DGROUP:162A
+ISFREE				  Byte	 DGROUP:1BB7
+ISMINE				  Byte	 DGROUP:0B48
+ISRIGHTMOVE			  Byte	 DGROUP:0D36
+ISSELECTED			  Byte	 DGROUP:06C5
+IS_INT				  Near	 DGROUP:1699
+ITERATION			  Byte	 DGROUP:09A6
+IWIN				  Byte	 DGROUP:2599
+I_WIN_MESSAGE			  Byte	 DGROUP:2334
+J				  Byte	 DGROUP:225F
+JTOBX				  Near	 DGROUP:22DB
+KHINTS_SHOW			  Byte	 DGROUP:24D7
+KINGCHECKISMOVERIGHT		  Near	 DGROUP:0C9D
+KINGCONTINUELONGMOVE		  Near	 DGROUP:0C81
+KINGDESTROYENEMY		  Near	 DGROUP:0CFD
+KINGENEMY			  Word	 DGROUP:097D
+KINGENEMYCOUNT			  Byte	 DGROUP:09A5
+KINGISSELECTABLE		  Near	 DGROUP:0BD6
+KINGMOVES			  Word	 DGROUP:092B
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 76
+Symbol Table
+
+
+
+KINGMOVESCOUNT			  Byte	 DGROUP:0953
+KINGMOVESSHIFTS			  Byte	 DGROUP:09BC
+KINGMUSTMOVES			  Word	 DGROUP:0954
+KINGMUSTMOVESAFTERMOVE		  Byte	 DGROUP:09A7
+KINGMUSTMOVESAFTERMOVECOUNT	  Byte	 DGROUP:09BB
+KINGMUSTMOVESCOUNT		  Byte	 DGROUP:097C
+KINGSELECT			  Near	 DGROUP:0BA8
+KINGSHIFT			  Word	 DGROUP:09C4
+KINGSHIFT1			  Word	 DGROUP:09C6
+LAST_FIGURE_COLUMN		  Byte	 DGROUP:0793
+LAST_FIGURE_ROW			  Byte	 DGROUP:0792
+LAST_FIGURE_VALUE		  Byte	 DGROUP:0794
+LEFTDIRECTION			  Near	 DGROUP:106F
+LEFTOK				  Byte	 DGROUP:106E
+LEGAL				  Byte	 DGROUP:2260
+LENGTH_NAME			  Byte	 DGROUP:205A
+LINE_COLOR			  Byte	 DGROUP:01CE
+LOC_1729			  Near	 DGROUP:1729
+LOC_1730			  Near	 DGROUP:173D
+MOUSEHANDLER			  Near	 DGROUP:0565
+MOUSEINIT			  Near	 DGROUP:0514
+MOVEAFTERMOVE			  Near	 DGROUP:0ABF
+MOVECHECKER			  Near	 DGROUP:0E23
+MOVEINDEX			  Byte	 DGROUP:0D37
+MOVEKING			  Near	 DGROUP:0CE1
+MOVES_BUFF			  Word	 DGROUP:06C6
+MOVES_COUNT			  Byte	 DGROUP:078E
+MOVETYPE			  Byte	 DGROUP:0D54
+MOVE_COLOR			  Byte	 DGROUP:0E22
+MUSTSELECTARRAY			  Word	 DGROUP:2246
+MUSTSELECTCOUNT			  Byte	 DGROUP:225E
+MYMOVE				  Byte	 DGROUP:06C4
+MY_COLOR			  Byte	 DGROUP:2595
+MY_MOVE_MESSAGE			  Byte	 DGROUP:233E
+MY_START_COORDINATES		  Word	 DGROUP:0A60
+N				  Byte	 DGROUP:205C
+NEEDMOVEAFTER			  Byte	 DGROUP:0A5F
+NO_CHAR				  Near	 DGROUP:16A4
+NWAS				  Byte	 DGROUP:2196
+OLD_INT_08H			  Dword	 DGROUP:17AF
+OUTCOUNT			  Byte	 DGROUP:1BB8
+OUTPUT				  Near	 DGROUP:1713
+OUT_BUFF			  Byte	 DGROUP:17B3
+OUT_CHR				  Near	 DGROUP:16F9
+OVERRUN				  Byte	 DGROUP:162B
+PACKET_CHAT_LENGTH		  Byte	 DGROUP:20CD
+PACKET_NAME_LENGTH		  Byte	 DGROUP:205B
+PLOT				  Near	 DGROUP:039C
+PREVENTBADMOVES			  Near	 DGROUP:10E0
+PRINT				  Near	 DGROUP:21D1
+PRINTBADENEMYMOVE		  Near	 DGROUP:23A1
+PRINTBADMOVE			  Near	 DGROUP:23B3
+PRINTENEMYMOVE			  Near	 DGROUP:23BC
+PRINTENEMYWIN			  Near	 DGROUP:23CE
+PRINTIWIN			  Near	 DGROUP:23D7
+PRINTMYMOVE			  Near	 DGROUP:23C5
+PRINTSTATUS			  Near	 DGROUP:23FE
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 77
+Symbol Table
+
+
+
+PRINTWAITING			  Near	 DGROUP:23AA
+PRINT_DESK			  Near	 DGROUP:0185
+PRINT_FULL_DESK			  Near	 DGROUP:0199
+PRINT_ROW			  Near	 DGROUP:0134
+PRINT_STRING			  Near	 DGROUP:0212
+PROCEDURE_COLOR			  Byte	 DGROUP:0828
+PROCEEDDIRECTION		  Near	 DGROUP:09FB
+PROCEEDDIRECTIONAFTER		  Near	 DGROUP:0A62
+PROCESSPUSH			  Near	 DGROUP:26C4
+PUSH_WAS			  Byte	 DGROUP:265C
+RADIUS				  Word	 DGROUP:02DC
+RANDOM				  Byte	 DGROUP:1C5D
+READFROMOUTBUFF			  Near	 DGROUP:1BE0
+READ_CHAR			  Near	 DGROUP:16A8
+RECIEVEDB			  Byte	 DGROUP:1C5E
+RECOLORCELL			  Near	 DGROUP:08E9
+RIGHTDIRECTION			  Near	 DGROUP:10A8
+RIGHTMOVEWITHOUTHACK		  Near	 DGROUP:0ECC
+RIGHTOK				  Byte	 DGROUP:10A7
+RIGHT_SIDE			  Byte	 DGROUP:20CB
+ROW				  Byte	 DGROUP:04CC
+ROW_CURR			  Byte	 DGROUP:265D
+SAVED				  Byte	 DGROUP:1C61
+SAVEMOVE			  Near	 DGROUP:079A
+SAVE_CHAR			  Near	 DGROUP:16C6
+SAVE_DS				  Word	 DGROUP:1628
+SELECTLEGAL			  Near	 DGROUP:2280
+SENDB				  Near	 DGROUP:1D1D
+SENDE				  Near	 DGROUP:1FC7
+SENDEDB				  Byte	 DGROUP:1C5F
+SENGG				  Near	 DGROUP:2197
+SER_CS				  Word	 DGROUP:1626
+SER_INI				  Near	 DGROUP:11C1
+SER_INT				  Far	 DGROUP:1673
+SER_INT_1			  Near	 DGROUP:16DD
+SER_INT_2			  Near	 DGROUP:16E9
+SER_INT_3			  Near	 DGROUP:16F3
+SER_IP				  Word	 DGROUP:1624
+SER_RST				  Near	 DGROUP:162C
+SETHANDLER			  Near	 DGROUP:053F
+SETTIMERHANDLER			  Near	 DGROUP:1749
+SET_MODE			  Near	 DGROUP:01CF
+SHIFT				  Word	 DGROUP:0FDB
+SHOWCHECKERHINTS		  Near	 DGROUP:241B
+SHOWCURSOR			  Near	 DGROUP:052F
+SHOWKINGHINTS			  Near	 DGROUP:24D8
+SOURCE				  Byte	 DGROUP:121E
+SRC_PTR				  Word	 DGROUP:1620
+SSTEP				  Near	 DGROUP:046A
+START				  Near	 DGROUP:0100
+STARTNEWGAME			  Near	 DGROUP:2768
+STATISTIC			  Near	 DGROUP:1179
+SUCESS				  Byte	 DGROUP:08C5
+TAIL_BUFF			  Word	 DGROUP:1BB5
+TICKS_COUNT			  Byte	 DGROUP:1747
+TIMER_VECTOR			  Near	 DGROUP:1774
+TOMYCOORDINATES			  Near	 DGROUP:1E82
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 78
+Symbol Table
+
+
+
+TSTEP				  Near	 DGROUP:04AB
+WAITINGFORRESPONSE		  Byte	 DGROUP:0797
+WAITING_MOVE_MESSAGE		  Byte	 DGROUP:2376
+WAIT_FREE			  Near	 DGROUP:162F
+WAIT_LINE			  Near	 DGROUP:1700
+WHITE_COUNT			  Byte	 DGROUP:0796
+WHITE_DESK			  Byte	 DGROUP:0582
+WHITE_DESK_DUMP			  Byte	 DGROUP:05C2
+WHITE_LETTERS			  Byte	 DGROUP:028F
+WHITE_NUMBERS			  Byte	 DGROUP:02A7
+WHITE_OFFSETS			  Byte	 DGROUP:017D
+WRITEINOUTBUFF			  Near	 DGROUP:1BB9
+WRITEMUSTSELECTELEMENT		  Near	 DGROUP:22ED
+WRITEVALUETOACTIVEDESK		  Near	 DGROUP:11A3
+WRITE_LETTERS			  Near	 DGROUP:0237
+WRITE_NUMBERS			  Near	 DGROUP:0263
+X				  Word	 DGROUP:02D2
+X0				  Word	 DGROUP:02D6
+X_COORD				  Word	 DGROUP:04C8
+X_OFF				  Word	 DGROUP:0181
+Y				  Word	 DGROUP:02D4
+Y0				  Word	 DGROUP:02D8
+Y_COORD				  Word	 DGROUP:04CA
+Y_OFF				  Word	 DGROUP:0183
+_AIW_QUIT			  Near	 DGROUP:1DE6
+_AIW_WHITE			  Near	 DGROUP:1DC2
+_AIW_WIN			  Near	 DGROUP:1DCC
+_BAD_COMMAND			  Near	 DGROUP:1D89
+_BORDER_HOR			  Near	 DGROUP:02C2
+_BORDER_VER			  Near	 DGROUP:02B1
+_C2				  Near	 DGROUP:25EE
+_C3				  Near	 DGROUP:25FD
+_C4				  Near	 DGROUP:2604
+_C5				  Near	 DGROUP:261E
+_C5_PUSH			  Near	 DGROUP:264D
+_CAA_HIDE_CHECKER_HINTS		  Near	 DGROUP:07D2
+_CAA_HIDE_KING_HINTS		  Near	 DGROUP:07CC
+_CAA_SKIP			  Near	 DGROUP:07D5
+_CADTD_BLACK			  Near	 DGROUP:1145
+_CADTD_SKIP			  Near	 DGROUP:1149
+_CAL_QUIT			  Near	 DGROUP:07F2
+_CBC_BAD			  Near	 DGROUP:0FD5
+_CBC_OK				  Near	 DGROUP:0FDA
+_CB_0				  Near	 DGROUP:0B0E
+_CB_1				  Near	 DGROUP:0B1B
+_CB_2				  Near	 DGROUP:0B28
+_CB_3				  Near	 DGROUP:0B35
+_CB_BAD				  Near	 DGROUP:0B42
+_CB_QUIT			  Near	 DGROUP:0B47
+_CECIA_BAD			  Near	 DGROUP:231F
+_CECIA_LOOP			  Near	 DGROUP:2318
+_CECIA_QUIT			  Near	 DGROUP:2324
+_CECQ_QUIT			  Near	 DGROUP:1E81
+_CEC_BAD			  Near	 DGROUP:1E70
+_CEC_BAD_LOOP			  Near	 DGROUP:1E75
+_CEC_CHECKER			  Near	 DGROUP:1E66
+_CEC_QUIT			  Near	 DGROUP:0B72
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 79
+Symbol Table
+
+
+
+_CEC_WHITE			  Near	 DGROUP:0B65
+_CEW_BAD			  Near	 DGROUP:1EEC
+_CEW_QUIT			  Near	 DGROUP:1EF1
+_CEW_WHITE			  Near	 DGROUP:1ECE
+_CHANGE_END			  Near	 DGROUP:1E06
+_CHANGE_TO_BLACK		  Near	 DGROUP:1E01
+_CHECK				  Near	 DGROUP:1E2B
+_CIEW_QUIT			  Near	 DGROUP:1F9D
+_CIEW_WHITE			  Near	 DGROUP:1F85
+_CIK_KING			  Near	 DGROUP:0E1C
+_CIK_QUIT			  Near	 DGROUP:0E20
+_CIMR_LOOP			  Near	 DGROUP:0D43
+_CIMR_QUIT			  Near	 DGROUP:0D53
+_CIS_QUIT			  Near	 DGROUP:0F72
+_CLEAN_LOOP			  Near	 DGROUP:23F5
+_CLM_QUIT			  Near	 DGROUP:0EA7
+_CMC_BUTTONS			  Near	 DGROUP:04FE
+_CMC_QUIT			  Near	 DGROUP:0512
+_CONT_FL			  Near	 DGROUP:2190
+_CSL_QUIT			  Near	 DGROUP:227F
+_CS_0				  Near	 DGROUP:2021
+_CS_O_QUIT			  Near	 DGROUP:2041
+_CS_QUIT			  Near	 DGROUP:0F55
+_CS_SELECT			  Near	 DGROUP:0F45
+_CTDS_QUIT			  Near	 DGROUP:2244
+_CTDS_WHITE			  Near	 DGROUP:2239
+_C_F				  Near	 DGROUP:25E6
+_DF_2				  Near	 DGROUP:0326
+_DF_3				  Near	 DGROUP:0338
+_DF_4				  Near	 DGROUP:0347
+_DF_CYCLE			  Near	 DGROUP:02F2
+_DF_NEXT			  Near	 DGROUP:0358
+_DF_NEXT1			  Near	 DGROUP:036E
+_DONT_CORET			  Near	 DGROUP:214D
+_DON_T_PRINT			  Near	 DGROUP:20BC
+_DRAW				  Near	 DGROUP:038D
+_EINMA_EXIT			  Near	 DGROUP:052D
+_END_READ			  Near	 DGROUP:25CD
+_END_WRITE			  Near	 DGROUP:25BE
+_ENEMY_MOVE			  Near	 DGROUP:0E14
+_ENEMY_WIN			  Near	 DGROUP:1D78
+_FL				  Near	 DGROUP:216F
+_FLM_SKIP			  Near	 DGROUP:0E74
+_GCFM_CYCLE			  Near	 DGROUP:0FE2
+_GCFM_NEXT			  Near	 DGROUP:1038
+_GCFM_QUIT			  Near	 DGROUP:1041
+_GCFM_WHITE			  Near	 DGROUP:0FCA
+_GCNM_QUIT			  Near	 DGROUP:106D
+_GCNM_SKIP			  Near	 DGROUP:105B
+_GFC_ENEMY_COLOR		  Near	 DGROUP:0F34
+_GFC_QUIT			  Near	 DGROUP:0F39
+_GKM_LOOP			  Near	 DGROUP:09E7
+_GOOD_COMMAND			  Near	 DGROUP:1D97
+_GS_1				  Near	 DGROUP:1EF2
+_G_SEND				  Near	 DGROUP:219C
+_HANDLEE_CONT			  Near	 DGROUP:1FB1
+_HANDLEE_QUIT			  Near	 DGROUP:1FC6
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 80
+Symbol Table
+
+
+
+_HANDLEG_QUIT			  Near	 DGROUP:2168
+_HANDLEN_QUIT			  Near	 DGROUP:20CA
+_HANDLE_E_SKIP			  Near	 DGROUP:1FC1
+_HAN_SKIP			  Near	 DGROUP:2122
+_HA_QUIT			  Near	 DGROUP:1C5C
+_HB_30H				  Near	 DGROUP:1C82
+_HB_31H				  Near	 DGROUP:1C93
+_HB_32H				  Near	 DGROUP:1CA4
+_HB_DRAW			  Near	 DGROUP:1CB5
+_HB_DRAW1			  Near	 DGROUP:1D0E
+_HB_HANDLE			  Near	 DGROUP:1C62
+_HB_LOSE			  Near	 DGROUP:1CE6
+_HB_QUIT			  Near	 DGROUP:1D1C
+_HB_WASSENT			  Near	 DGROUP:1C74
+_HB_WIN				  Near	 DGROUP:1CBB
+_HC1_QUIT			  Near	 DGROUP:1DAB
+_HCELL_MOVE			  Near	 DGROUP:0823
+_HCELL_QUIT			  Near	 DGROUP:0826
+_HCELL_SKIP			  Near	 DGROUP:081F
+_HCH_DRAW			  Near	 DGROUP:24A9
+_HCH_MOVES			  Near	 DGROUP:24A0
+_HCH_MUST			  Near	 DGROUP:2494
+_HCH_QUIT			  Near	 DGROUP:24D2
+_HCM_CHECK_MOVE_CONTAINS	  Near	 DGROUP:0D84
+_HCM_FINISH_KING_LONG_MOVE	  Near	 DGROUP:0DE4
+_HCM_FINISH_LONG_MOVE		  Near	 DGROUP:0DED
+_HCM_HARD_MOVE			  Near	 DGROUP:0D76
+_HCM_LONG_MOVE			  Near	 DGROUP:0DA5
+_HCM_PRINT			  Near	 DGROUP:0DF3
+_HCM_QUIT			  Near	 DGROUP:0E01
+_HCM_STILL_CHECKER		  Near	 DGROUP:0DD1
+_HCM_USUAL_MOVE			  Near	 DGROUP:0D65
+_HC_B				  Near	 DGROUP:1C10
+_HC_C				  Near	 DGROUP:1C1A
+_HC_D				  Near	 DGROUP:1C2B
+_HC_E				  Near	 DGROUP:1C35
+_HC_G				  Near	 DGROUP:1C3F
+_HC_QUIT			  Near	 DGROUP:1C46
+_HC_RESULT			  Near	 DGROUP:1D82
+_HD_GOOD			  Near	 DGROUP:1F4F
+_HD_QUIT			  Near	 DGROUP:1F62
+_HKH_DRAW			  Near	 DGROUP:2566
+_HKH_MOVES			  Near	 DGROUP:255D
+_HKH_MUST			  Near	 DGROUP:2551
+_HKH_QUIT			  Near	 DGROUP:258F
+_HKM_FINISH_LONG_MOVE		  Near	 DGROUP:0C5C
+_HKM_LONG_MOVE			  Near	 DGROUP:0C43
+_HKM_PRINT			  Near	 DGROUP:0C62
+_HKM_QUIT			  Near	 DGROUP:0C70
+_HKN_CHECK_MOVE_CONTAINS	  Near	 DGROUP:0C25
+_HKN_HARD_MOVE			  Near	 DGROUP:0C16
+_HKN_USUAL_MOVE			  Near	 DGROUP:0C04
+_HM_CHECKER			  Near	 DGROUP:08E5
+_HM_QUIT			  Near	 DGROUP:08E8
+_HS_1				  Near	 DGROUP:083C
+_HS_BLACK			  Near	 DGROUP:0885
+_HS_BLACK1			  Near	 DGROUP:0898
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 81
+Symbol Table
+
+
+
+_HS_CONTINUE			  Near	 DGROUP:089B
+_HS_WHITE			  Near	 DGROUP:086C
+_HS_WHITE1			  Near	 DGROUP:087F
+_HW_KING			  Near	 DGROUP:08DF
+_IS_QUIT			  Near	 DGROUP:0BF3
+_KCIMR_CHECK_MOVE_AFTER_MOVE	  Near	 DGROUP:0CBE
+_KCIMR_GOOD			  Near	 DGROUP:0CDE
+_KCIMR_LOOP			  Near	 DGROUP:0CAA
+_KCIMR_QUIT			  Near	 DGROUP:0CDF
+_KS_QUIT			  Near	 DGROUP:0BD5
+_LD_BACK_DIRECTION		  Near	 DGROUP:108F
+_LD_BAD				  Near	 DGROUP:10A0
+_LD_QUIT			  Near	 DGROUP:10A5
+_LEFT				  Near	 DGROUP:0571
+_LOOP1				  Near	 DGROUP:024C
+_LOOP2				  Near	 DGROUP:027A
+_MAIN				  Near	 DGROUP:259A
+_MAIN_CONT			  Near	 DGROUP:25A4
+_MAM_LOOP			  Near	 DGROUP:0ADA
+_MAM_QUIT			  Near	 DGROUP:0AE7
+_MORE				  Near	 DGROUP:211F
+_MY_MOVE			  Near	 DGROUP:0E0C
+_PBM1				  Near	 DGROUP:1119
+_PBM2				  Near	 DGROUP:110C
+_PBM3				  Near	 DGROUP:10FF
+_PBM4				  Near	 DGROUP:10F2
+_PBM_BAD			  Near	 DGROUP:1126
+_PBM_QUIT			  Near	 DGROUP:112B
+_PD0				  Near	 DGROUP:0137
+_PD1				  Near	 DGROUP:0138
+_PD2				  Near	 DGROUP:013B
+_PDA_BEFOREENEMY		  Near	 DGROUP:0A62
+_PDA_QUIT			  Near	 DGROUP:0ABE
+_PDL				  Near	 DGROUP:0188
+_PDQ				  Near	 DGROUP:0195
+_PFD_AFTER_ENEMY		  Near	 DGROUP:0A27
+_PFD_BEFORE_ENEMY		  Near	 DGROUP:09FB
+_PFD_CHECK_COLOR		  Near	 DGROUP:0A19
+_PFD_QUIT			  Near	 DGROUP:0A5D
+_PP_BACKSPACE			  Near	 DGROUP:2720
+_PP_QUIT			  Near	 DGROUP:2767
+_PP_ROW_NOT_DECR		  Near	 DGROUP:274A
+_PP_ROW_NOT_INC			  Near	 DGROUP:26EC
+_PRINT_LOOP			  Near	 DGROUP:2202
+_PS1				  Near	 DGROUP:0212
+_QUIT				  Near	 DGROUP:2652
+_QUIT_SH			  Near	 DGROUP:08C4
+_QUIT_SH_BAD			  Near	 DGROUP:08BE
+_RC_LOOP			  Near	 DGROUP:08FB
+_RD_BACK_DIRECTION		  Near	 DGROUP:10C8
+_RD_BAD				  Near	 DGROUP:10D9
+_RD_QUIT			  Near	 DGROUP:10DE
+_READ				  Near	 DGROUP:25C3
+_READ_CHAT			  Near	 DGROUP:2127
+_READ_CONT			  Near	 DGROUP:26DC
+_READ_NAME			  Near	 DGROUP:209F
+_READ_PP			  Near	 DGROUP:26CF
+Turbo Assembler	 Version 3.1	    12/04/12 19:40:34	    Page 82
+Symbol Table
+
+
+
+_RFOB_SKIP			  Near	 DGROUP:1BEF
+_RMWH_SKIP_KING			  Near	 DGROUP:0EF7
+_SCS_DRAW			  Near	 DGROUP:244D
+_SCS_MOVES			  Near	 DGROUP:2446
+_SCS_MUST			  Near	 DGROUP:243C
+_SCS_QUIT			  Near	 DGROUP:2477
+_SENDG_LOOP			  Near	 DGROUP:21B1
+_SKH_DRAW			  Near	 DGROUP:250A
+_SKH_MOVES			  Near	 DGROUP:2503
+_SKH_MUST			  Near	 DGROUP:24F9
+_SKH_QUIT			  Near	 DGROUP:2534
+_S_RETRY			  Near	 DGROUP:21B4
+_TMC_BLACK			  Near	 DGROUP:1E9A
+_TMC_QUIT			  Near	 DGROUP:1EA8
+_T_ALERT_NEXT_TIME		  Near	 DGROUP:17AD
+_T_CON				  Near	 DGROUP:17A9
+_T_MAIN				  Near	 DGROUP:1790
+_WIOB_SKIP			  Near	 DGROUP:1BC9
+_WLB				  Near	 DGROUP:0244
+_WLS				  Near	 DGROUP:0247
+_WNB				  Near	 DGROUP:0270
+_WNS				  Near	 DGROUP:0273
+_WRITE				  Near	 DGROUP:25B4
+_WSL_CHECKER			  Near	 DGROUP:22B3
+_WSL_KING			  Near	 DGROUP:22C3
+_WSL_LOOP			  Near	 DGROUP:2286
+_WSL_QUIT			  Near	 DGROUP:22D7
+_WSL_SKIP			  Near	 DGROUP:22D0
+_WSL_WHITE			  Near	 DGROUP:22A7
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  27AB Word	  Public  CODE
+
